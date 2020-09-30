@@ -1,0 +1,62 @@
+
+<at>
+	<date>
+	<day>1</day>
+	<month>1</month>
+	</date>
+	
+	<date>
+	<day>6</day>
+	<month>1</month>
+	</date>
+	
+	<date>
+	<day>1</day>
+	<month>5</month>
+	</date>
+	
+	<date>
+	<day>15</day>
+	<month>8</month>
+	</date>
+	
+	<date>
+	<day>26</day>
+	<month>10</month>
+	</date>
+	
+	<date>
+	<day>1</day>
+	<month>11</month>
+	</date>
+	<date>
+	<day>8</day>
+	<month>12</month>
+	</date>
+	
+	<date>
+	<day>25</day>
+	<month>12</month>
+	</date>
+	
+	<date>
+	<day>26</day>
+	<month>12</month>
+	</date>
+	
+	<dayofweek>
+	<day>montag</day>
+	</dayofweek>
+	
+	<dayofweek>
+	<day>donnerstag</day>
+	</dayofweek>
+	
+	<dayofweek>
+	<day>montag</day>
+	</dayofweek>
+	
+	<dayofweek>
+	<day>donnerstag</day>
+	</dayofweek>
+</at>
