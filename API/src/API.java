@@ -4,6 +4,8 @@ import java.nio.charset.Charset;
 import java.sql.*;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Scanner;
 import javafx.application.Application;
@@ -18,7 +20,6 @@ import org.apache.commons.io.IOUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.w3c.dom.NodeList;
-
 public class API extends Application {
     static ArrayList<LocalDate> dates = new ArrayList<LocalDate>();
     static LocalDate startJahr;
@@ -34,14 +35,12 @@ public class API extends Application {
         api.listFeiertage();
         api.vergleichen();
         api.connect();
-        api.createNewDatabase("API.db");
         api.createNewTable();
         api.insert();
         api.selectAll();
         api.output();
         Application.launch(args);
     }
-
     public static void userInput() {
         System.out.println("Startjahr: ");
         startJahr = LocalDate.of(reader.nextInt(), reader.nextInt(), reader.nextInt());
@@ -62,7 +61,7 @@ public class API extends Application {
     }
     static void searchAPI() throws JSONException, IOException {
         LocalDate date;
-        for(int i = 0; i < dauer; i++){
+        for (int i = 0; i < dauer; i++) {
             JSONObject json = new JSONObject(IOUtils.toString(new URL(readURL()), Charset.forName("UTF-8")));
             date = LocalDate.parse(getWert(json, "Neujahrstag"));
             dates.add(date);
@@ -82,15 +81,15 @@ public class API extends Application {
             dates.add(date);
         }
     }
-    static void listFeiertage(){
+    static void listFeiertage() {
         System.out.println(jahreStatisch);
-        for(int i = jahreStatisch; i < jahreStatisch+dauer; i++) {
+        for (int i = jahreStatisch; i < jahreStatisch + dauer; i++) {
             System.out.println(i);
-            dates.add(LocalDate.of(i,1,6));
-            dates.add(LocalDate.of(i,5,1));
-            dates.add(LocalDate.of(i,10,26));
-            dates.add(LocalDate.of(i,12,8));
-            dates.add(LocalDate.of(i,8,15));
+            dates.add(LocalDate.of(i, 1, 6));
+            dates.add(LocalDate.of(i, 5, 1));
+            dates.add(LocalDate.of(i, 10, 26));
+            dates.add(LocalDate.of(i, 12, 8));
+            dates.add(LocalDate.of(i, 8, 15));
         }
     }
     static void vergleichen() {
@@ -115,12 +114,12 @@ public class API extends Application {
             }
         }
     }
-    void output(){
-        System.out.println("Montag: "+mo);
-        System.out.println("Dienstag: "+di);
-        System.out.println("Mittwoch: "+mi);
-        System.out.println("Donnerstag: "+don);
-        System.out.println("Freitag: "+fr);
+    void output() {
+        System.out.println("Montag: " + mo);
+        System.out.println("Dienstag: " + di);
+        System.out.println("Mittwoch: " + mi);
+        System.out.println("Donnerstag: " + don);
+        System.out.println("Freitag: " + fr);
     }
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -167,32 +166,15 @@ public class API extends Application {
             }
         }
     }
-    public static void createNewDatabase(String fileName) {
-
-        String url = "jdbc:sqlite:C:\\Users\\nisch\\IdeaProjects\\API\\" + fileName;
-
-        try {
-            Connection conn = DriverManager.getConnection(url);
-            if (conn != null) {
-                DatabaseMetaData meta = conn.getMetaData();
-                System.out.println("The driver name is " + meta.getDriverName());
-                System.out.println("A new database has been created.");
-            }
-
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-        }
-    }
     public static void createNewTable() {
         String url = "jdbc:sqlite:C:\\Users\\nisch\\IdeaProjects\\API\\API.db";
         String sql = "CREATE TABLE IF NOT EXISTS feiertag (\n"
-                + " id integer ,\n"
                 + " montag integer,\n"
                 + " dienstag integer,\n"
                 + " mittwoch integer,\n"
                 + " donnerstag integer,\n"
                 + " freitag integer)";
-        try{
+        try {
             Connection conn = DriverManager.getConnection(url);
             Statement stmt = conn.createStatement();
             stmt.execute(sql);
@@ -212,7 +194,7 @@ public class API extends Application {
     }
     public void insert() {
         String sql = "INSERT INTO feiertag(montag, dienstag, mittwoch, donnerstag, freitag) VALUES(?,?,?,?,?)";
-        try{
+        try {
             Connection conn = this.connection();
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, mo);
@@ -220,25 +202,25 @@ public class API extends Application {
             pstmt.setInt(3, mi);
             pstmt.setInt(4, don);
             pstmt.setInt(5, fr);
-
             pstmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
     }
-    public void selectAll(){
+    public void selectAll() {
         String sql = "SELECT * FROM feiertag";
         try {
             Connection conn = this.connection();
-            Statement stmt  = conn.createStatement();
-            ResultSet rs    = stmt.executeQuery(sql);
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
             while (rs.next()) {
+                System.out.println("Montag, Dienstag, Mittwoch, Donnerstag, Freitag");
                 System.out.println(
-                        rs.getInt("montag") + "\t" +
-                        rs.getInt("dienstag") + "\t" +
-                        rs.getInt("mittwoch") + "\t" +
-                        rs.getInt("donnerstag") + "\t" +
-                        rs.getInt("freitag") + "\t");
+                        rs.getInt("montag") + "\t \t" +
+                                rs.getInt("dienstag") + "\t \t \t" +
+                                rs.getInt("mittwoch") + "\t \t \t" +
+                                rs.getInt("donnerstag") + "\t \t \t" +
+                                rs.getInt("freitag"));
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
