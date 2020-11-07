@@ -1,6 +1,6 @@
 <h1>Feiertagzähler Erklärung</h1>
-**Was macht das Programm?**
 
+**Was macht das Programm?**
 Diese Programm dient dazu, dass man herausfinden kann, wie viele Feiertage in den nächsten Jahren sind. Es berechnet die Feiertage im nächsten.
 Jahr, kann dies aber auch die für die nächsten 10 oder 100 Jahre, dazu wird eine API.
 Danach werden die Daten in einer Datenbank gespeichert und visuell in einem Balkendiagramm dargestellt, mithilfe von JavaFx.
@@ -23,8 +23,8 @@ https://gluonhq.com/products/javafx/
 Nach dem Download zu den anderen 3 Dateien Kopieren und im lib-Ordner die .zip entpacken. Danach wieder die gleichen Schritte 
 wie zuvor und nach dem Plus die lib-Datei auswählen und einbinden. Zum Schluss muss man noch unter Run -> Edit Configurations bei VM options.
 --module-path Pfad --add-modules javafx.controls,javafx.fxml   eingeben. Bei Pfad muss der Pfad bis zur lib eingefügt werden.
-z. B. /path/to/javafx-sdk-15.0.1/lib . Danach wieder Apply und OK.
-(50Jahre)
+z. B. /path/to/javafx-sdk-15.0.1/lib . Danach wieder Apply und OK. (50Jahre)
+
 ![JavaFX](https://user-images.githubusercontent.com/59961104/98450277-d7aa9580-213b-11eb-9b17-564107d45f7a.JPG)
 
 _Datenbank:_
