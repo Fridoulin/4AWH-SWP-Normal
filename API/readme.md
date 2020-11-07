@@ -1,5 +1,6 @@
-<h1>API Erklärung</h1>
+<h1>Feiertagzähler Erklärung</h1>
 **Was macht das Programm?**
+
 Diese Programm dient dazu, dass man herausfinden kann, wie viele Feiertage in den nächsten Jahren sind. Es berechnet die Feiertage im nächsten.
 Jahr, kann dies aber auch die für die nächsten 10 oder 100 Jahre, dazu wird eine API.
 Danach werden die Daten in einer Datenbank gespeichert und visuell in einem Balkendiagramm dargestellt, mithilfe von JavaFx.
