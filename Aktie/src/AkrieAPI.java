@@ -19,7 +19,7 @@ import javafx.application.Application;
 import java.util.Collections;
 
 
-public class AkrieAPI extends Application{
+public class AktieAPI extends Application{
     static Scanner reader = new Scanner(System.in);
     static ArrayList<Double> closeWerte = new ArrayList<>();
     static ArrayList<Double> gleitenderDurchschnitt = new ArrayList<>();
@@ -27,7 +27,7 @@ public class AkrieAPI extends Application{
     static String URL, auswahlAktie;
 
     public static void main (String args[]) throws IOException, JSONException {
-    AkrieAPI a = new AkrieAPI();
+    AktieAPI a = new AktieAPI();
     a.inputUser();
     a.readURL();
     a.getWert(URL);
