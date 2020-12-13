@@ -37,6 +37,8 @@ public class AkrieAPI extends Application{
     a.insert();
     a.insertAVG();
     a.selectAll();
+    System.out.println(gleitenderDurchschnitt);
+    System.out.println("\n \n ");
     Application.launch(args);
     }
     static void inputUser(){
@@ -57,7 +59,7 @@ public class AkrieAPI extends Application{
 
     static void durchschnitt(){
         int count = 0;
-        double wert = 0, avg;
+        double wert = 0, x,avg;
         for(int i = 0; i <= daten.size()-1; i++){
             count++;
             if(count <= 200){
@@ -66,11 +68,14 @@ public class AkrieAPI extends Application{
                 gleitenderDurchschnitt.add(avg);
             }
             if(count > 200) {
+                x = closeWerte.get(i-200);
+                wert = wert - x;
                 wert = wert + closeWerte.get(i);
                 avg = wert/count;
                 gleitenderDurchschnitt.add(avg);
             }
         }
+        Collections.reverse(gleitenderDurchschnitt);
 
     }
     public static void connect() {
@@ -132,13 +137,13 @@ public class AkrieAPI extends Application{
     }
 
     public void insertAVG() {
-        String sqlAVG = "INSERT OR REPLACE INTO "+auswahlAktie+"AVG (avg, date) VALUES(?, ?)";
+        String sqlAVG = "INSERT OR REPLACE INTO "+auswahlAktie+"AVG (date, avg) VALUES(?, ?)";
             try{
                 Connection conn = this.connection();
                 PreparedStatement pstmt = conn.prepareStatement(sqlAVG);
-                for (int i = 0; i < daten.size(); i++) {
-                    pstmt.setDouble(1, gleitenderDurchschnitt.get(i));
-                    pstmt.setString(2, daten.get(i).toString());
+                for (int i = 0; i < gleitenderDurchschnitt.size(); i++) {
+                    pstmt.setString(1, daten.get(i).toString());
+                    pstmt.setDouble(2, gleitenderDurchschnitt.get(i));
                     pstmt.executeUpdate();
                 }
             } catch (SQLException e) {
@@ -147,7 +152,7 @@ public class AkrieAPI extends Application{
         }
     public void selectAll(){
         String sql = "SELECT * FROM "+ auswahlAktie +" order by datum";
-        String sqlAVG = "SELECT * FROM "+ auswahlAktie+"AVG order by date";
+        String sqlAVG = "SELECT * FROM "+ auswahlAktie+"AVG";
         try {
             Connection conn = this.connection();
             Statement stmt = conn.createStatement();
@@ -156,11 +161,12 @@ public class AkrieAPI extends Application{
             ResultSet rsAVG = stmtAVG.executeQuery(sqlAVG);
 
             System.out.println("Datum               Close Werte                 Durchschnitt");
-            while (rs.next() ) {
+            while (rs.next() && rsAVG.next()) {
                 System.out.println(
                         rs.getString("datum")  + "\t \t \t \t" +
                                 rs.getDouble("close") + "\t \t \t \t" +
-                                 rsAVG.getDouble("avg"));
+                                 rsAVG.getDouble("avg")
+                );
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -183,20 +189,12 @@ public class AkrieAPI extends Application{
             tatsaechlich.setName("Close-Werte");
             for (int i = 0; i < daten.size()-1; i++) {
                 daten.sort(null);
-                if (gleitenderDurchschnitt.get(i) >= closeWerte.get(i)) {
-                    tatsaechlich.getNode().setStyle("-fx-stroke: #15ff00; ");
-                }
-                if(gleitenderDurchschnitt.get(i) < closeWerte.get(i)) {
-                    tatsaechlich.getNode().setStyle("-fx-stroke: #ff0000; ");
-                }
                 tatsaechlich.getData().add(new XYChart.Data(daten.get(i).toString(), closeWerte.get(i)));
                 }
 
-            Collections.reverse(gleitenderDurchschnitt);
             XYChart.Series<String, Number> durchschnitt = new XYChart.Series();
             durchschnitt.setName("gleitender Durchschnitt");
             for (int i = 0; i < gleitenderDurchschnitt.size()-1; i++) {
-                daten.sort(null);
                     durchschnitt.getData().add(new XYChart.Data(daten.get(i).toString(), gleitenderDurchschnitt.get(i)));
             }
 
@@ -204,7 +202,13 @@ public class AkrieAPI extends Application{
             lineChart.getData().add(tatsaechlich);
             lineChart.getData().add(durchschnitt);
 
-            for(int i = 0; i < gleitenderDurchschnitt.size(); i++) {
+            for(int i = 0; i <= gleitenderDurchschnitt.size()-1; i++) {
+                if(gleitenderDurchschnitt.get(i) < closeWerte.get(i)) {
+                    tatsaechlich.getNode().setStyle("-fx-stroke: #ff0000; ");
+                }
+                if (gleitenderDurchschnitt.get(i) >= closeWerte.get(i)) {
+                    tatsaechlich.getNode().setStyle("-fx-stroke: #15ff00; ");
+                }
 
             }
             lineChart.setCreateSymbols(false);
