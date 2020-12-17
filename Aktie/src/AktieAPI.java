@@ -46,7 +46,7 @@ public class AktieAPI extends Application{
         auswahlAktie = reader.next();
     }
     static void readURL () throws IOException, JSONException {
-        URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol="+auswahlAktie+ "&outputsize=compact&apikey=key"; //schlüssen eingeben
+        URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol="+auswahlAktie+ "&outputsize=full&apikey=key"; //schlüssen eingeben
     }
     static void getWert(String URL) throws JSONException, IOException {
         JSONObject json = new JSONObject(IOUtils.toString(new URL(URL), Charset.forName("UTF-8")));
@@ -74,16 +74,16 @@ public class AktieAPI extends Application{
         double wert = 0, x,avg;
         for(int i = 0; i <= closeDB.size()-1; i++){
             count++;
-            if(count <= 20){
+            if(count <= 200){
                 wert = wert + closeDB.get(i);
                 avg = wert/count;
                 gleitenderDurchschnitt.add(avg);
             }
-            if(count > 20) {
-                x = closeDB.get(i-20);
+            if(count > 200) {
+                x = closeDB.get(i-200);
                 wert = wert - x;
                 wert = wert + closeDB.get(i);
-                avg = wert/20;
+                avg = wert/200;
                 gleitenderDurchschnitt.add(avg);
             }
         }
