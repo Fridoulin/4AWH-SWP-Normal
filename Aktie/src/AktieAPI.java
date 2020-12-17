@@ -91,7 +91,7 @@ public class AktieAPI extends Application{
     public static void connect() {
         Connection conn = null;
         try {
-            String url = "jdbc:sqlite:C:\\Users\\nisch\\IdeaProjects\\Aktie\\Aktie.db";
+            String url = "jdbc:sqlite:path"; //Pfad einfügen
             conn = DriverManager.getConnection(url);
             System.out.println("Connection to SQLite has been established.");
         } catch (SQLException e) {
@@ -107,7 +107,7 @@ public class AktieAPI extends Application{
         }
     }
     public static void createNewTable() {
-        String url = "jdbc:sqlite:C:\\Users\\nisch\\IdeaProjects\\Aktie\\Aktie.db";
+        String url = "jdbc:sqlite:path"; //Pfad einfügen
         String sql = "CREATE TABLE IF NOT EXISTS "+ auswahlAktie +" (\n"
                 + "datum text primary key, close real)";
         String sqlAVG = "CREATE TABLE IF NOT EXISTS "+ auswahlAktie+"AVG (\n"
@@ -122,7 +122,7 @@ public class AktieAPI extends Application{
         }
     }
     private Connection connection() {
-        String url = "jdbc:sqlite:C:\\Users\\nisch\\IdeaProjects\\Aktie\\Aktie.db";
+        String url = "jdbc:sqlite:path"; //Pfad einfügen
         Connection conn = null;
         try {
             conn = DriverManager.getConnection(url);
