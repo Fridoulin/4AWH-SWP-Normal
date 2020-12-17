@@ -6,8 +6,8 @@ JavaFX, Mittelwert:
 	Darüber hinaus berechnet das Programm automatisch den Mittelwert der letzten 200 Tage, und gibt die zusammen mit dem Aktienwert 
 	in JavaFX aus. Dabei achtet das Programm darauf, ob der Close-Wert über den Mittelwert ist, wenn ja, dann ist das Line-Chart grün,
 	wenn er unterhalb ist, dann Rot.
-	![JavaFXGrün](https://user-images.githubusercontent.com/59961104/102459896-864cca80-4046-11eb-9104-3d2050661676.jpeg)
-	![JavaFXRot](https://user-images.githubusercontent.com/59961104/102459906-89e05180-4046-11eb-9de1-454d9f502528.jpeg)
+	![JavaFXRot](https://user-images.githubusercontent.com/59961104/102460309-1723a600-4047-11eb-8ce7-9c6304a625dc.jpg)
+	![JavaFXGrün](https://user-images.githubusercontent.com/59961104/102460313-17bc3c80-4047-11eb-9bb1-24728bc38dc3.jpg)
 
   
 Datenbank:
