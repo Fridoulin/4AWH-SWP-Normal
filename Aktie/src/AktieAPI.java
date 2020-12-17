@@ -46,7 +46,7 @@ public class AktieAPI extends Application{
         auswahlAktie = reader.next();
     }
     static void readURL () throws IOException, JSONException {
-        URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol="+auswahlAktie+ "&outputsize=compact&apikey=A0ZGRFDRZANZJGA8";
+        URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol="+auswahlAktie+ "&outputsize=compact&apikey=key"; //schlüssen eingeben
     }
     static void getWert(String URL) throws JSONException, IOException {
         JSONObject json = new JSONObject(IOUtils.toString(new URL(URL), Charset.forName("UTF-8")));
