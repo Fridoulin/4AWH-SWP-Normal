@@ -18,10 +18,11 @@ Was sind close-Werte?
 	Close-Wert sind werte, die die Aktie am ende des Tages hat.
 
 Was benötigt man dafür?
-	1. commons-io-2.7.jar
-	2. java.json.jar
-	3. sqlite-jdbx-3.32.3.2.jar
-	4. JavaFX: https://gluonhq.com/products/javafx/
+	1.Bei https://www.alphavantage.co/ anmelden und den Schlüssel kopieren und im Programm bei der URL einfügen
+	2. commons-io-2.7.jar
+	3. java.json.jar
+	4. sqlite-jdbx-3.32.3.2.jar
+	5. JavaFX: https://gluonhq.com/products/javafx/
 		Nach dem Download zu den anderen 3 Dateien Kopieren und im lib-Ordner die .zip entpacken. Danach wieder die gleichen Schritte 
 		wie zuvor und nach dem Plus die lib-Datei auswählen und einbinden. Zum Schluss muss man noch unter Run -> Edit Configurations bei VM options.
 		--module-path Pfad --add-modules javafx.controls,javafx.fxml   eingeben. Bei Pfad muss der Pfad bis zur lib eingefügt werden.
