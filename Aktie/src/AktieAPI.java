@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import javafx.application.Application;
 
-
 public class AktieAPI extends Application{
     static Scanner reader = new Scanner(System.in);
     static ArrayList<Double> closeWerte = new ArrayList<>();
@@ -178,7 +177,6 @@ public class AktieAPI extends Application{
                 dateDB.add(rsAVG.getString("date"));
                 avgDB.add(rsAVG.getDouble("avg"));
             }
-            System.out.println(dateDB);
             dateDB.sort(null);
 
         } catch (SQLException e) {
