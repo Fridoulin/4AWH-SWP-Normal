@@ -17,7 +17,7 @@ Datenbank:
 Was sind close-Werte?
 	Close-Wert sind werte, die die Aktie am ende des Tages hat.
 
-Was benötigt man dafür?
+Was benötigt man dafür?</br>
 	1.Bei https://www.alphavantage.co/ anmelden und den Schlüssel kopieren und im Programm bei der URL einfügen
 	2. commons-io-2.7.jar
 	3. java.json.jar
