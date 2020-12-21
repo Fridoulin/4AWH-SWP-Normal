@@ -16,7 +16,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Scanner;
 import javafx.application.Application;
-import java.util.Collections;
 
 
 public class AktieAPI extends Application{
@@ -26,6 +25,7 @@ public class AktieAPI extends Application{
     static ArrayList<LocalDate> daten = new ArrayList<>();
     static ArrayList<Double> avgDB = new ArrayList<>();
     static ArrayList<Double> closeDB = new ArrayList<>();
+    static ArrayList<String> dateDB = new ArrayList<>();
     static String URL, auswahlAktie;
 
     public static void main (String args[]) throws IOException, JSONException {
@@ -41,12 +41,12 @@ public class AktieAPI extends Application{
         a.selectAll();
         Application.launch(args);
     }
-    static void inputUser(){
+    static void inputUser() {
         System.out.println("Aktie (nur USA): ");
         auswahlAktie = reader.next();
     }
-    static void readURL () throws IOException, JSONException {
-        URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol="+auswahlAktie+ "&outputsize=full&apikey=key"; //schlüssen eingeben
+    static void readURL() {
+        URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol="+auswahlAktie+ "&outputsize=compact&apikey=A0ZGRFDRZANZJGA8";
     }
     static void getWert(String URL) throws JSONException, IOException {
         JSONObject json = new JSONObject(IOUtils.toString(new URL(URL), Charset.forName("UTF-8")));
@@ -56,8 +56,7 @@ public class AktieAPI extends Application{
             closeWerte.add(json.getJSONObject(LocalDate.parse((CharSequence)json.names().get(i)).toString()).getDouble("4. close"));
         }
     }
-
-    void durchschnitt(){
+    void durchschnitt() {
         String sql = "SELECT * FROM "+ auswahlAktie +" order by datum";
         try{
             Connection conn = this.connection();
@@ -74,16 +73,16 @@ public class AktieAPI extends Application{
         double wert = 0, x,avg;
         for(int i = 0; i <= closeDB.size()-1; i++){
             count++;
-            if(count <= 200){
+            if(count <= 20){
                 wert = wert + closeDB.get(i);
                 avg = wert/count;
                 gleitenderDurchschnitt.add(avg);
             }
-            if(count > 200) {
-                x = closeDB.get(i-200);
+            if(count > 20) {
+                x = closeDB.get(i-20);
                 wert = wert - x;
                 wert = wert + closeDB.get(i);
-                avg = wert/200;
+                avg = wert/20;
                 gleitenderDurchschnitt.add(avg);
             }
         }
@@ -91,7 +90,7 @@ public class AktieAPI extends Application{
     public static void connect() {
         Connection conn = null;
         try {
-            String url = "jdbc:sqlite:path"; //Pfad einfügen
+            String url = "jdbc:sqlite:C:\\Users\\nisch\\IdeaProjects\\Aktie\\Aktie.db";
             conn = DriverManager.getConnection(url);
             System.out.println("Connection to SQLite has been established.");
         } catch (SQLException e) {
@@ -107,7 +106,7 @@ public class AktieAPI extends Application{
         }
     }
     public static void createNewTable() {
-        String url = "jdbc:sqlite:path"; //Pfad einfügen
+        String url = "jdbc:sqlite:C:\\Users\\nisch\\IdeaProjects\\Aktie\\Aktie.db";
         String sql = "CREATE TABLE IF NOT EXISTS "+ auswahlAktie +" (\n"
                 + "datum text primary key, close real)";
         String sqlAVG = "CREATE TABLE IF NOT EXISTS "+ auswahlAktie+"AVG (\n"
@@ -122,7 +121,7 @@ public class AktieAPI extends Application{
         }
     }
     private Connection connection() {
-        String url = "jdbc:sqlite:path"; //Pfad einfügen
+        String url = "jdbc:sqlite:C:\\Users\\nisch\\IdeaProjects\\Aktie\\Aktie.db";
         Connection conn = null;
         try {
             conn = DriverManager.getConnection(url);
@@ -159,7 +158,7 @@ public class AktieAPI extends Application{
             System.out.println(e.getMessage());
         }
     }
-    public void selectAll(){
+    public void selectAll() {
         String sql = "SELECT * FROM "+ auswahlAktie +" order by datum";
         String sqlAVG = "SELECT * FROM "+ auswahlAktie+"AVG";
         try {
@@ -169,20 +168,23 @@ public class AktieAPI extends Application{
             ResultSet rs = stmt.executeQuery(sql);
             ResultSet rsAVG = stmtAVG.executeQuery(sqlAVG);
 
-            System.out.println("Datum               Close Werte                 Durchschnitt");
+            System.out.println("Datum               Close Werte             Durchschnitt");
             while (rs.next() && rsAVG.next()) {
                 System.out.println(
                         rs.getString("datum")  + "\t \t \t \t" +
                                 rs.getDouble("close") + "\t \t \t \t" +
                                 rsAVG.getDouble("avg")
                 );
+                dateDB.add(rsAVG.getString("date"));
                 avgDB.add(rsAVG.getDouble("avg"));
             }
+            System.out.println(dateDB);
+            dateDB.sort(null);
+
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
     }
-
     @Override
     public void start(Stage primaryStage) {
         try {
@@ -192,21 +194,17 @@ public class AktieAPI extends Application{
             yAxis.setLabel("close-Wert");
             final LineChart<String, Number> lineChart = new LineChart<String, Number>(xAxis, yAxis);
             lineChart.setTitle("Aktienkurs");
-
             XYChart.Series<String, Number> tatsaechlich = new XYChart.Series();
             tatsaechlich.setName("Close-Werte");
             for (int i = 0; i < closeWerte.size() - 1; i++) {
-                daten.sort(null);
-                tatsaechlich.getData().add(new XYChart.Data(daten.get(i).toString(), closeDB.get(i)));
+                tatsaechlich.getData().add(new XYChart.Data(dateDB.get(i), closeDB.get(i)));
             }
-
             XYChart.Series<String, Number> durchschnitt = new XYChart.Series();
             durchschnitt.setName("gleitender Durchschnitt");
             for (int i = 0; i < gleitenderDurchschnitt.size() - 1; i++) {
-                durchschnitt.getData().add(new XYChart.Data(daten.get(i).toString(), avgDB.get(i)));
+                durchschnitt.getData().add(new XYChart.Data(dateDB.get(i), avgDB.get(i)));
             }
-
-            Scene scene = new Scene(lineChart, 800, 600);
+            Scene scene = new Scene(lineChart, 1000, 600);
             lineChart.getData().add(tatsaechlich);
             lineChart.getData().add(durchschnitt);
 
