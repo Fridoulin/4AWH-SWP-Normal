@@ -45,7 +45,7 @@ public class AktieAPI extends Application{
         auswahlAktie = reader.next();
     }
     static void readURL() {
-        URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol="+auswahlAktie+ "&outputsize=compact&apikey=A0ZGRFDRZANZJGA8";
+        URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol="+auswahlAktie+ "&outputsize=full&apikey=KEY"; //alphavantage-schüssel einfügen
     }
     static void getWert(String URL) throws JSONException, IOException {
         JSONObject json = new JSONObject(IOUtils.toString(new URL(URL), Charset.forName("UTF-8")));
@@ -72,16 +72,16 @@ public class AktieAPI extends Application{
         double wert = 0, x,avg;
         for(int i = 0; i <= closeDB.size()-1; i++){
             count++;
-            if(count <= 20){
+            if(count <= 200){
                 wert = wert + closeDB.get(i);
                 avg = wert/count;
                 gleitenderDurchschnitt.add(avg);
             }
-            if(count > 20) {
-                x = closeDB.get(i-20);
+            if(count > 200) {
+                x = closeDB.get(i-200);
                 wert = wert - x;
                 wert = wert + closeDB.get(i);
-                avg = wert/20;
+                avg = wert/200;
                 gleitenderDurchschnitt.add(avg);
             }
         }
@@ -89,7 +89,7 @@ public class AktieAPI extends Application{
     public static void connect() {
         Connection conn = null;
         try {
-            String url = "jdbc:sqlite:C:\\Users\\nisch\\IdeaProjects\\Aktie\\Aktie.db";
+            String url = "jdbc:sqlite:PFAD"; //Pfad einfügen
             conn = DriverManager.getConnection(url);
             System.out.println("Connection to SQLite has been established.");
         } catch (SQLException e) {
@@ -105,7 +105,7 @@ public class AktieAPI extends Application{
         }
     }
     public static void createNewTable() {
-        String url = "jdbc:sqlite:C:\\Users\\nisch\\IdeaProjects\\Aktie\\Aktie.db";
+        String url = "jdbc:sqlite:PFAD"; //Pfad einfügen
         String sql = "CREATE TABLE IF NOT EXISTS "+ auswahlAktie +" (\n"
                 + "datum text primary key, close real)";
         String sqlAVG = "CREATE TABLE IF NOT EXISTS "+ auswahlAktie+"AVG (\n"
@@ -120,7 +120,7 @@ public class AktieAPI extends Application{
         }
     }
     private Connection connection() {
-        String url = "jdbc:sqlite:C:\\Users\\nisch\\IdeaProjects\\Aktie\\Aktie.db";
+        String url = "jdbc:sqlite:PFAD"; //Pfad einfügen
         Connection conn = null;
         try {
             conn = DriverManager.getConnection(url);
