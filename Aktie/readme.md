@@ -8,7 +8,7 @@ JavaFX, Mittelwert:
 	wenn er unterhalb ist, dann Rot.
 ![JavaFXRot](https://user-images.githubusercontent.com/59961104/102460309-1723a600-4047-11eb-8ce7-9c6304a625dc.jpg)
 
-![JavaFXGrün](https://user-images.githubusercontent.com/59961104/102460313-17bc3c80-4047-11eb-9bb1-24728bc38dc3.jpg)
+![grün](https://user-images.githubusercontent.com/59961104/102929936-c9ba9500-449b-11eb-9a4d-fb87b758f424.PNG)
   
 Datenbank:
 	Alle Werte, die das Program berechnt oder sich von der API holt, werden in einer Datenbank gespeichert. Bei jedem Aufruf werden die neuen
