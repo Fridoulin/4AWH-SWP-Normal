@@ -6,9 +6,8 @@ JavaFX, Mittelwert:
 	Darüber hinaus berechnet das Programm automatisch den Mittelwert der letzten 200 Tage, und gibt die zusammen mit dem Aktienwert 
 	in JavaFX aus. Dabei achtet das Programm darauf, ob der Close-Wert über den Mittelwert ist, wenn ja, dann ist das Line-Chart grün,
 	wenn er unterhalb ist, dann Rot.
-![Rot](https://user-images.githubusercontent.com/59961104/102930215-4d748180-449c-11eb-806c-0beabb635ea5.PNG)
-
-![grün](https://user-images.githubusercontent.com/59961104/102930317-76951200-449c-11eb-83b1-160b030774e5.PNG)
+	
+![Unbenannt](https://user-images.githubusercontent.com/59961104/105870063-2c053900-5ff8-11eb-919a-6a57a12e78dd.PNG)
 
 Datenbank:
 	Alle Werte, die das Program berechnt oder sich von der API holt, werden in einer Datenbank gespeichert. Bei jedem Aufruf werden die neuen
