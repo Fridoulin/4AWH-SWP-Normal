@@ -143,6 +143,8 @@ public class AktieAPISQL extends Application{
 
 
     void durchschnitt() {
+        //fehler in der Matrix
+        //komische Berechnung - fehler
         try {
             Statement myStmt = connection.createStatement();
             String querry = "SELECT * from " + auswahlAktie;
