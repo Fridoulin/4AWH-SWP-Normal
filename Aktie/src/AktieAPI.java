@@ -166,7 +166,7 @@ public class AktieAPISQL extends Application{
             while (rsNormal.next()) {
                 System.out.println(
                         rsNormal.getString("datum") + "\t \t \t \t" +
-                        rsNormal.getDouble("split"));
+                                rsNormal.getDouble("split"));
                 dateDB.add(rsNormal.getString("datum"));
                 closeDB.add(rsNormal.getDouble("split"));
             }
@@ -205,37 +205,37 @@ public class AktieAPISQL extends Application{
                 XYChart.Series<String, Number> tatsaechlich = new XYChart.Series();
                 XYChart.Series<String, Number> durchschnitt = new XYChart.Series();
                 tatsaechlich.setName("Close-Werte");
-                    for (int i = 0; i < dateDB.size() - 1; i++) {
-                        tatsaechlich.getData().add(new XYChart.Data(dateDB.get(i), closeDB.get(i)));
-                    }
-                    durchschnitt.setName("gleitender Durchschnitt");
-                    for (int i = 0; i < gleitenderDurchschnitt.size()-1; i++) {
-                        durchschnitt.getData().add(new XYChart.Data(dateDB.get(i), gleitenderDurchschnitt.get(i)));
-                    }
-                    lineChart.getData().add(tatsaechlich);
-                    lineChart.getData().add(durchschnitt);
-                    yAxis.setAutoRanging(false);
-                    double verschiebenOben = Collections.max(closeDB);
-                    double verschiebenUnten = Collections.min(closeDB);
-                    yAxis.setLowerBound(verschiebenUnten - 20);
-                    yAxis.setUpperBound(verschiebenOben + 20);
-                    tatsaechlich.getNode().setStyle("-fx-stroke: #000000; ");
-                    durchschnitt.getNode().setStyle("-fx-stroke: #ffffff; ");
-                    lineChart.setCreateSymbols(false);
-                if(gleitenderDurchschnitt.get(gleitenderDurchschnitt.size()-1)>closeDB.get(closeDB.size()-1)){
-                    scene.getStylesheets().add("backgroundRed.css");
+                for (int i = 0; i < dateDB.size() - 1; i++) {
+                    tatsaechlich.getData().add(new XYChart.Data(dateDB.get(i), closeDB.get(i)));
                 }
-                else {
-                    scene.getStylesheets().add("backgroundGreen.css");
-
+                durchschnitt.setName("gleitender Durchschnitt");
+                for (int i = 0; i < gleitenderDurchschnitt.size()-1; i++) {
+                    durchschnitt.getData().add(new XYChart.Data(dateDB.get(i), gleitenderDurchschnitt.get(i)));
                 }
-                    primaryStage.setScene(scene);
-                    WritableImage image = scene.snapshot(null);
-                    File directory = new File("C:" + File.separator + "Users" + File.separator + "nisch" + File.separator + "IdeaProjects" + File.separator + "AktieAPISQL" + File.separator + "Image" + File.separator + newFolder);
-                    directory.mkdir();
-                    File file = new File("C:\\Users\\nisch\\IdeaProjects\\AktieAPISQL\\Image\\" + newFolder + "\\" + tempAktie + " " + LocalDate.now().minusDays(1) + ".png"); //Pfad einfügen
-                    ImageIO.write(SwingFXUtils.fromFXImage(image, null), "PNG", file);
-                    System.out.println("Image Saved " + tempAktie);
+                lineChart.getData().add(tatsaechlich);
+                lineChart.getData().add(durchschnitt);
+                yAxis.setAutoRanging(false);
+                double verschiebenOben = Collections.max(closeDB);
+                double verschiebenUnten = Collections.min(closeDB);
+                yAxis.setLowerBound(verschiebenUnten - 20);
+                yAxis.setUpperBound(verschiebenOben + 20);
+                tatsaechlich.getNode().setStyle("-fx-stroke: #000000; ");
+                durchschnitt.getNode().setStyle("-fx-stroke: #ffffff; ");
+                lineChart.setCreateSymbols(false);
+                if(closeDB.size() > 0 && gleitenderDurchschnitt.size() > 0){
+                    if(closeDB.get(closeDB.size()-1) > gleitenderDurchschnitt.get(gleitenderDurchschnitt.size()-1)) {
+                        scene.getStylesheets().add("backgroundGreen.css");
+                    }else {
+                        scene.getStylesheets().add("backgroundRed.css");
+                    }
+                }
+                primaryStage.setScene(scene);
+                WritableImage image = scene.snapshot(null);
+                File directory = new File("C:" + File.separator + "Users" + File.separator + "nisch" + File.separator + "IdeaProjects" + File.separator + "Aktie" + File.separator + "Image" + File.separator + newFolder);
+                directory.mkdir();
+                File file = new File("C:\\Users\\nisch\\IdeaProjects\\Aktie\\Image\\" + newFolder + "\\" + tempAktie + " " + LocalDate.now().minusDays(1) + ".png"); //Pfad einfügen
+                ImageIO.write(SwingFXUtils.fromFXImage(image, null), "PNG", file);
+                System.out.println("Image Saved " + tempAktie);
             }
         } catch(Exception e) {
             e.printStackTrace();
