@@ -24,7 +24,6 @@ import javafx.application.Application;
 import javax.imageio.ImageIO;
 
 public class AktieAPISQL extends Application{
-    public static String DBurl = "jdbc:mysql://localhost:3306/aktiendb?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
     static Statement myStmt;
     public static Connection connection;
 
@@ -35,14 +34,17 @@ public class AktieAPISQL extends Application{
     static ArrayList<String> dateDB = new ArrayList<>();
     static ArrayList<Double> adjustedSplit = new ArrayList<>();
     static ArrayList<String> auswahlAktie = new ArrayList<>();
-    static String URL, type, key, verzeichnis;
+    static String URL, type, key, verzeichnis, aktienDB;
     static int avgauswahl;
+
 
     public static void main (String args[]){
         Application.launch(args);
     }
     static boolean connectToMySql() throws SQLException {
         try {
+            String DBurl = "jdbc:mysql://localhost:3306/"+aktienDB+"?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
+
             connection = DriverManager.getConnection(DBurl, "root", "NicerSpeck#");
             myStmt = connection.createStatement();
             System.out.println("Datenbank verknüpft");
@@ -55,11 +57,12 @@ public class AktieAPISQL extends Application{
     }
     static void inputUser() throws IOException {
         try {
-            File file = new File("aktien.txt");
+            File file = new File("C:\\Users\\nisch\\IdeaProjects\\Aktie\\src\\aktien.txt");
             BufferedReader br = new BufferedReader(new FileReader(file));
             String st;
             key = br.readLine();
             verzeichnis = br.readLine();
+            aktienDB = br.readLine();
             avgauswahl = Integer.parseInt(br.readLine());
             while ((st = br.readLine()) != null)
                 if (st.equals("compact") || st.equals("full")) {
