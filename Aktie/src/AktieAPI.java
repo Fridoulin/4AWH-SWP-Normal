@@ -35,7 +35,7 @@ public class AktieAPISQL extends Application{
     static ArrayList<String> dateDB = new ArrayList<>();
     static ArrayList<Double> adjustedSplit = new ArrayList<>();
     static ArrayList<String> auswahlAktie = new ArrayList<>();
-    static String URL, type;
+    static String URL, type, key, verzeichnis;
     static int avgauswahl;
 
     public static void main (String args[]){
@@ -58,6 +58,8 @@ public class AktieAPISQL extends Application{
             File file = new File("aktien.txt");
             BufferedReader br = new BufferedReader(new FileReader(file));
             String st;
+            key = br.readLine();
+            verzeichnis = br.readLine();
             avgauswahl = Integer.parseInt(br.readLine());
             while ((st = br.readLine()) != null)
                 if (st.equals("compact") || st.equals("full")) {
@@ -72,7 +74,7 @@ public class AktieAPISQL extends Application{
     }
     static void readURL(String tempAktie) throws Exception{
         try {
-            URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=" + tempAktie + "&outputsize=" + type + "&apikey=A0ZGRFDRZANZJGA8";//Schlüssel eingeben
+            URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=" + tempAktie + "&outputsize=" + type + "&apikey="+key;//Schlüssel eingeben
         } catch (Exception e) {
             System.out.println("Keine Internetverbingung");
         }
@@ -231,9 +233,12 @@ public class AktieAPISQL extends Application{
                 }
                 primaryStage.setScene(scene);
                 WritableImage image = scene.snapshot(null);
-                File directory = new File("C:" + File.separator + "Users" + File.separator + "nisch" + File.separator + "IdeaProjects" + File.separator + "Aktie" + File.separator + "Image" + File.separator + newFolder);
+
+                File directoryImage = new File(verzeichnis + File.separator + "Image" );
+                directoryImage.mkdir();
+                File directory = new File(verzeichnis + "Image\\" + File.separator + newFolder);
                 directory.mkdir();
-                File file = new File("C:\\Users\\nisch\\IdeaProjects\\Aktie\\Image\\" + newFolder + "\\" + tempAktie + " " + LocalDate.now().minusDays(1) + ".png"); //Pfad einfügen
+                File file = new File(verzeichnis + "Image\\" + newFolder + "\\" + tempAktie + " " + LocalDate.now().minusDays(1) + ".png"); //Pfad einfügen
                 ImageIO.write(SwingFXUtils.fromFXImage(image, null), "PNG", file);
                 System.out.println("Image Saved " + tempAktie);
             }
