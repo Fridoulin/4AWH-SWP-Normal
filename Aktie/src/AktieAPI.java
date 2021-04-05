@@ -57,7 +57,7 @@ public class AktieAPISQL extends Application{
     }
     static void inputUser() throws IOException {
         try {
-            File file = new File("C:\\Users\\nisch\\IdeaProjects\\Aktie\\src\\aktien.txt");
+            File file = new File("C:\\Users\\IdeaProjects\\Aktie\\src\\aktien.txt"); //Pfad
             BufferedReader br = new BufferedReader(new FileReader(file));
             String st;
             key = br.readLine();
@@ -77,7 +77,7 @@ public class AktieAPISQL extends Application{
     }
     static void readURL(String tempAktie) throws Exception{
         try {
-            URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=" + tempAktie + "&outputsize=" + type + "&apikey="+key;//Schlüssel eingeben
+            URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=" + tempAktie + "&outputsize=" + type + "&apikey="+key;
         } catch (Exception e) {
             System.out.println("Keine Internetverbingung");
         }
