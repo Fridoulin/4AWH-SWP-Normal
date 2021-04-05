@@ -12,7 +12,7 @@ Täglich ausführen:</br>
 Textdatei:</br>
 	1. Zeile: Damit das Programm funktioniert, muss man sich bei https://www.alphavantage.co/ einen Account erstelle und den Key in die Textdatei aktien eintragen </br>
 	2. Zeile: Verzeichnis angeben, bis zu dem Ordner in dem sich ide src befindet!! (z.B. C:\\Users\\IdeaProjects\\Aktie\\), immer \\ und nach Aktie auch!</br>
-	3. Zeile: Datenbankname eintragen!
+	3. Zeile: Datenbankname eintragen!</br>
 	4. Zeile: Der Wert aus dem der Durchschnitt berechnet werden soll (z.B. 200 -> Standart)</br>
 	5. Zeile: API-Wert -> full oder compact (nur 100 Werte, bei full alle seit der Aufzeichnung)</br>
 	6. Zeile: alles ab der 5.Zeile sind aktien (max. 5)</br>
