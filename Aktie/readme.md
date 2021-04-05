@@ -2,6 +2,7 @@ Was macht das Programm?</br>
 Allgemein:</br>
 	Dieses Programm dient dazu, dass man aus einer API die close-Wert und das dazugehörige Datum auszulesen. 
 	Dabei kann man des Unternehmen (z.B. AAPL (Apple), TSLA (Tesla), usw.) auswählen von welchem man die Aktienwerte haben will. </br>
+	
 Wichtig vor dem 1. Start:</br>
 	In das Program gehen und bei Zeile 60 angeben wo die Textdatei liegt. Sie muss in dem src-Ordern liegen!</br>
 Täglich ausführen:</br>
