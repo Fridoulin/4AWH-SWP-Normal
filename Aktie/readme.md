@@ -16,7 +16,7 @@ Textdatei:</br>
 	4. Zeile: Der Wert aus dem der Durchschnitt berechnet werden soll (z.B. 200 -> Standart)</br>
 	5. Zeile: API-Wert -> full oder compact (nur 100 Werte, bei full alle seit der Aufzeichnung)</br>
 	6. Zeile: alles ab der 5.Zeile sind aktien (max. 5)</br>
-	7. 
+
 JavaFX, Mittelwert:</br>
 	Darüber hinaus berechnet das Programm automatisch den Mittelwert der letzten 200 Tage, und gibt die zusammen mit dem Aktienwert </br>
 	in JavaFX aus. Dabei achtet das Programm darauf, ob der Close-Wert über den Mittelwert ist, wenn ja, dann ist das Line-Chart grün,</br>
