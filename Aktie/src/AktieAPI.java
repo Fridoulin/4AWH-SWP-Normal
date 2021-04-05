@@ -169,9 +169,9 @@ public class AktieAPISQL extends Application{
             ResultSet rsNormal = myStmt.executeQuery( "SELECT * from " + tempAktie);
             System.out.println("Datum               Close Werte");
             while (rsNormal.next()) {
-                System.out.println(
+             /*   System.out.println(
                         rsNormal.getString("datum") + "\t \t \t \t" +
-                                rsNormal.getDouble("split"));
+                                rsNormal.getDouble("split"));*/
                 dateDB.add(rsNormal.getString("datum"));
                 closeDB.add(rsNormal.getDouble("split"));
             }
