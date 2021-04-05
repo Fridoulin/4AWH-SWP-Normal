@@ -24,7 +24,7 @@ JavaFX, Mittelwert:</br>
 ![Unbenannt](https://user-images.githubusercontent.com/59961104/105870063-2c053900-5ff8-11eb-919a-6a57a12e78dd.PNG)
 
 Datenbank:</br>
-	Die Daten aus der API werden in der Datenbank gespeichert. Dafür muss man eine Verbindung mit MySQL herstellen - Den Connector einbinden und in MySQL Workbench eine</br>         neue Datenbank erstellen, den Name der Datenbank in die Variable DBURL eintragen.  </br>
+	Die Daten aus der API werden in der Datenbank gespeichert. Dafür muss man eine Verbindung mit MySQL herstellen - Den Connector einbinden und in MySQL Workbench eine             neue Datenbank erstellen, den Name der Datenbank in die Variable DBURL eintragen.  </br>
 
 Was sind close-Werte?</br>
 	Close-Wert sind werte, die die Aktie am ende des Tages hat.</br>
