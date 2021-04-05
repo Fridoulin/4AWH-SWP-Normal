@@ -1,24 +1,29 @@
 Was macht das Programm?
 Allgemein:
-	Dieses Programm dient dazu, dass man aus einer API die close-Wert und das dazugehörige Datum auszulesen.
-	Dabei kann man des Unternehmen (z.B. AAPL (Apple), TSLA (Tesla), usw.) auswählen von welchem man die Aktienwerte haben will. 
+	Dieses Programm dient dazu, dass man aus einer API die close-Wert und das dazugehörige Datum auszulesen. 
+	Dabei kann man des Unternehmen (z.B. AAPL (Apple), TSLA (Tesla), usw.) auswählen von welchem man die Aktienwerte haben will.
+Textdatei:
+	1. Zeile:Damit das Programm funktioniert, muss man sich bei https://www.alphavantage.co/ einen Account erstelle und den Key in die Textdatei aktien eintragen 
+	2. Zeile: Verzeichnis angeben, bis zu dem Ordner in dem sich ide src befindet!! (z.B. C:\\Users\\IdeaProjects\\Aktie\\), immer \\ und nach Aktie auch!!
+	3. Zeile: Der Wert aus dem der Durchschnitt berechnet werden soll (z.B. 200 -> Standart)
+	4. Zeile: API-Wert -> full oder compact (nur 100 Werte, bei full alle seit der Aufzeichnung)
+	5. Zeile: alles ab der 5.Zeile sind aktien (max. 5)
 JavaFX, Mittelwert:
 	Darüber hinaus berechnet das Programm automatisch den Mittelwert der letzten 200 Tage, und gibt die zusammen mit dem Aktienwert 
 	in JavaFX aus. Dabei achtet das Programm darauf, ob der Close-Wert über den Mittelwert ist, wenn ja, dann ist das Line-Chart grün,
-	wenn er unterhalb ist, dann Rot.
+	wenn er unterhalb ist, dann Rot. Diese Charts werden im Ordner wo das Programm lieg abgspeichert, in Image und den dazugehörigen Ordner.
 	
 ![Unbenannt](https://user-images.githubusercontent.com/59961104/105870063-2c053900-5ff8-11eb-919a-6a57a12e78dd.PNG)
 
 Datenbank:
-	Alle Werte, die das Program berechnt oder sich von der API holt, werden in einer Datenbank gespeichert. Bei jedem Aufruf werden die neuen
-	Werte in der Datenbank gespeichert, damit die Grafik immer genauer wird. 
+	Die Daten aus der API werden in der Datenbank gespeichert. Dafür muss man eine Verbindung mit MySQL herstellen - Den Connector einbinden und in MySQL Workbench eine neue 	  Datenbank erstellen, den Name der Datenbank in die Variable DBURL eintragen.  
 
 Was sind close-Werte?
 	Close-Wert sind werte, die die Aktie am ende des Tages hat.
 
 Was benötigt man dafür?</br>
 	1.Bei https://www.alphavantage.co/ anmelden und den Schlüssel kopieren und im Programm bei der URL einfügen</br>
-	2. https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc</br>
+	2. https://dev.mysql.com/downloads/connector/j/</br>
 	3. https://mvnrepository.com/artifact/commons-io/commons-ior</br>
 	4. https://mvnrepository.com/artifact/org.json/json/20140107</br>
 	5. JavaFX: https://gluonhq.com/products/javafx/</br>
