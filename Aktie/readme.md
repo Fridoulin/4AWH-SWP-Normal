@@ -7,7 +7,7 @@ Wichtig vor dem 1. Start:</br>
 	In das Program gehen und bei Zeile 60 angeben wo die Textdatei liegt. Sie muss in dem src-Ordern liegen!</br>
 	
 Täglich ausführen:</br>
-	Damit das Program täglich muss man das Program 1 Mal ausführen und die erste Zeile mit dem Pfad (Intllij) kopieren. Diesen in eine Textdatein kopieren und als cmd</br>           Abspeichern. Danach in Aufgabenplanung (Windows 10) gehen und eine neue Aufgabe erstellen (Name, Beschreibung, Zeit + Täglich und den Pfad zur Datei angeben).</br>
+	Damit das Program täglich muss man das Program 1 Mal ausführen und die erste Zeile mit dem Pfad (Intllij) kopieren. Diesen in eine Textdatei kopieren und als .cmd     	         Abspeichern. Danach in Aufgabenplanung (Windows 10) gehen und eine neue Aufgabe erstellen (Name, Beschreibung, Zeit + Täglich und den Pfad zur Datei angeben).</br>
 	
 Textdatei:</br>
 	1. Zeile: Damit das Programm funktioniert, muss man sich bei https://www.alphavantage.co/ einen Account erstelle und den Key in die Textdatei aktien eintragen </br>
