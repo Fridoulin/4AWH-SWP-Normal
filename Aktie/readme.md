@@ -2,12 +2,17 @@ Was macht das Programm?</br>
 Allgemein:</br>
 	Dieses Programm dient dazu, dass man aus einer API die close-Wert und das dazugehörige Datum auszulesen. 
 	Dabei kann man des Unternehmen (z.B. AAPL (Apple), TSLA (Tesla), usw.) auswählen von welchem man die Aktienwerte haben will. </br>
-Textdatei:/</br>
+Wichtig vor dem 1. Start:</br>
+	In das Program gehen und bei Zeile 60 angeben wo die Textdatei liegt. Sie muss in dem src-Ordern liegen!</br>
+Täglich ausführen:</br>
+	Damit das Program täglich muss man das Program 1 Mal ausführen und die erste Zeile mit dem Pfad (Intllij) kopieren. Diesen in eine Textdatein kopieren und als cmd               Abspeichern. Danach in Aufgabenplanung (Windows 10) gehen und eine neue Aufgabe erstellen (Name, Beschreibung, Zeit + Täglich und den Pfad zur Datei angeben).
+Textdatei:</br>
 	1. Zeile:Damit das Programm funktioniert, muss man sich bei https://www.alphavantage.co/ einen Account erstelle und den Key in die Textdatei aktien eintragen </br>
 	2. Zeile: Verzeichnis angeben, bis zu dem Ordner in dem sich ide src befindet!! (z.B. C:\\Users\\IdeaProjects\\Aktie\\), immer \\ und nach Aktie auch!</br>
-	3. Zeile: Der Wert aus dem der Durchschnitt berechnet werden soll (z.B. 200 -> Standart)</br>
-	4. Zeile: API-Wert -> full oder compact (nur 100 Werte, bei full alle seit der Aufzeichnung)</br>
-	5. Zeile: alles ab der 5.Zeile sind aktien (max. 5)</br>
+	3. Zeile: Datenbankname eintragen!
+	4. Zeile: Der Wert aus dem der Durchschnitt berechnet werden soll (z.B. 200 -> Standart)</br>
+	5. Zeile: API-Wert -> full oder compact (nur 100 Werte, bei full alle seit der Aufzeichnung)</br>
+	6. Zeile: alles ab der 5.Zeile sind aktien (max. 5)</br>
 JavaFX, Mittelwert:</br>
 	Darüber hinaus berechnet das Programm automatisch den Mittelwert der letzten 200 Tage, und gibt die zusammen mit dem Aktienwert </br>
 	in JavaFX aus. Dabei achtet das Programm darauf, ob der Close-Wert über den Mittelwert ist, wenn ja, dann ist das Line-Chart grün,</br>
