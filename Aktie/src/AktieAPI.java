@@ -34,32 +34,27 @@ public class test2 extends Application {
     static ArrayList<String> auswahlAktie = new ArrayList<>();
     static ArrayList<Double> adjustedCoefficient = new ArrayList<>();
     static ArrayList<Double> buySellWert = new ArrayList<>();
-    static ArrayList<String> buySell = new ArrayList<>();
+    static ArrayList<String> buySellList = new ArrayList<>();
     static LocalDate kaufDatum;
     static String URL, type, key, verzeichnis, aktienDB, sizeChart;
     static int avgauswahl;
     static double depot = 10000, verkaufswertEnde = 0;
+    static ArrayList<String> auswahlAktie = new ArrayList<>();
+    static LocalDate kaufDatum;
+    static String type, key, verzeichnis, aktienDB, sizeChart;
+    static int avgauswahl;
 
-    public static void main(String args[]) {
+    public static void main(String args[]) throws IOException {
+        UserData u = new UserData();
+        u.inputUser();
         Application.launch(args);
     }
+    public void inputUser() throws IOException {
+        ArrayList<String> auswahlAktie = new ArrayList<>();
+        LocalDate kaufDatum;
+        String type, key, verzeichnis, aktienDB, sizeChart;
+        int avgauswahl;
 
-    static boolean connectToMySql() throws SQLException {
-        try {
-            String DBurl = "jdbc:mysql://localhost:3306/" + aktienDB + "?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
-
-            connection = DriverManager.getConnection(DBurl, "root", "NicerSpeck#");
-            myStmt = connection.createStatement();
-            System.out.println("Datenbank verknüpft");
-            return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-
-    }
-
-    static void inputUser() throws IOException {
         try {
             File file = new File("C:\\Users\\nisch\\IdeaProjects\\AktieAPISQL\\src\\aktien.txt"); //Pfad
             BufferedReader br = new BufferedReader(new FileReader(file));
@@ -80,7 +75,21 @@ public class test2 extends Application {
             e.printStackTrace();
         }
     }
+    static boolean connectToMySql() throws SQLException {
+        try {
+            String DBurl = "jdbc:mysql://localhost:3306/" + aktienDB + "?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
 
+            connection = DriverManager.getConnection(DBurl, "root", "NicerSpeck#");
+            myStmt = connection.createStatement();
+            System.out.println("Datenbank verknüpft");
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+
+    }
+    
     static void readURL(String tempAktie) throws Exception {
         try {
             URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=" + tempAktie + "&outputsize=" + type + "&apikey=" + key;
@@ -142,7 +151,7 @@ public class test2 extends Application {
         adjustedSplit.clear();
         dateDB.clear();
         gleitenderDurchschnitt.clear();
-        buySell.clear();
+        buySellList.clear();
         buySellWert.clear();
     }
 
@@ -209,29 +218,33 @@ public class test2 extends Application {
 
     static void buySell() {
         boolean buy = false;
-        double temp, temp2 = 0, tempSell;
-        int anteile = 0, j = 0, count = 0, startDate;
+        double temp, temp2 = 0, tempSell, coefficient;
+        int anteile = 0, j = 0;
         Collections.reverse(daten);
-        if (adjustedSplit.size() > 0 && gleitenderDurchschnitt.size() > 0) {
+        if (closeWerte.size() > 0 && gleitenderDurchschnitt.size() > 0) {
             while(buy != true) {
-                if (gleitenderDurchschnitt.get(j) > adjustedSplit.get(j)) {
+                if (gleitenderDurchschnitt.get(j) > closeWerte.get(j)) {
                     buy = true;
                 } else {
                     j++;
                 }
             }
             for (int i = 0; i < daten.size(); i++) {
-                if (gleitenderDurchschnitt.get(i) > adjustedSplit.get(i)) {
-                    temp = (depot / adjustedSplit.get(i));
+                if (gleitenderDurchschnitt.get(i) > closeWerte.get(i)) {
+                    temp = (depot / closeWerte.get(i));
                     anteile = (int) temp;
-                    buySell.add("buy");
+                    buySellList.add("buy");
                 }
-                 if (gleitenderDurchschnitt.get(i) <= adjustedSplit.get(i)) {
-                    tempSell = anteile * adjustedSplit.get(i);
+                if(!adjustedCoefficient.equals(1.0)){
+                    coefficient = adjustedCoefficient.get(i);
+                    anteile = anteile/(int)coefficient;
+                }
+                 if (gleitenderDurchschnitt.get(i) <= closeWerte.get(i)) {
+                    tempSell = anteile * closeWerte.get(i);
                     temp2 = tempSell - depot;
                     buySellWert.add((double) Math.round(temp2 * 100) / 100);
                     verkaufswertEnde += tempSell;
-                    buySell.add("sell");
+                    buySellList.add("sell");
                 }
                 else {
                     buySellWert.add(0.0);
@@ -269,15 +282,14 @@ public class test2 extends Application {
                 if (gleitenderDurchschnitt.size() == 0) {
                     durchschnitt();
                 }
-                if (buySell.size() == 0) {
+                if (buySellList.size() == 0) {
                     buySell();
                 }
                 if(buySellWert.size() == 0){
                     buySell();
                 }
-                System.out.println(buySell.size() +" "+ buySellWert.size());
                 for (int i = 0; i < daten.size(); i++) {
-                    String writeData = "insert ignore into " + tempAktie + "_Calc (datum, closeCorrect, avg, buysell, buySellWert) values('" + daten.get(i) + "', '" + adjustedSplit.get(i) + "', '" + gleitenderDurchschnitt.get(i) + "', '" + buySell.get(i) + "', '" + buySellWert.get(i) + "');";
+                    String writeData = "insert ignore into " + tempAktie + "_Calc (datum, closeCorrect, avg, buysell, buySellWert) values('" + daten.get(i) + "', '" + adjustedSplit.get(i) + "', '" + gleitenderDurchschnitt.get(i) + "', '" + buySellList.get(i) + "', '" + buySellWert.get(i) + "');";
                     myStmt.executeUpdate(writeData);
                 }
                 System.out.println("Datensatz eingetragen");
@@ -304,7 +316,6 @@ public class test2 extends Application {
         public void start (Stage primaryStage) throws SQLException, IOException {
             try {
                 inputUser();
-
                 for (int x = 0; x < auswahlAktie.size(); x++) {
                     String tempAktie = auswahlAktie.get(x);
                     connectToMySql();
