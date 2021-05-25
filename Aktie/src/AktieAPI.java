@@ -22,7 +22,7 @@ import javafx.application.Application;
 
 import javax.imageio.ImageIO;
 
-public class AktieAPISQL extends Application {
+public class Test2 extends Application {
     static Statement myStmt;
     public static Connection connection;
 
@@ -35,24 +35,26 @@ public class AktieAPISQL extends Application {
     static ArrayList<Double> adjustedCoefficient = new ArrayList<>();
     static ArrayList<Double> buySellWert = new ArrayList<>();
     static ArrayList<String> buySellList = new ArrayList<>();
-    static LocalDate kaufDatum;
-    static String URL, type, key, verzeichnis, aktienDB, sizeChart;
+    static ArrayList<Double> dreiProzentWert = new ArrayList<>();
+    static ArrayList<String> dreiProzentList = new ArrayList<>();
+    static String URL, type, key, verzeichnis, aktienDB, kaufDatum;
     static int avgauswahl;
-    static double depot = 10000, verkaufswertEnde = 0;
+    static double depot, verkaufswertEnde = 0;
 
     public static void main(String args[]) throws IOException {
         Application.launch(args);
     }
+
     public void inputUser() throws IOException {
         try {
-            File file = new File("C:\\Users\\nisch\\IdeaProjects\\AktieAPISQL\\src\\aktien.txt"); //Pfad
+            File file = new File("C:\\Users\\nisch\\IdeaProjects\\Aktie\\src\\aktien.txt"); //Pfad
             BufferedReader br = new BufferedReader(new FileReader(file));
             String st;
             key = br.readLine();
             verzeichnis = br.readLine();
             aktienDB = br.readLine();
-            sizeChart = br.readLine();
-            kaufDatum = LocalDate.parse(br.readLine());
+            kaufDatum = br.readLine();
+            depot = Integer.parseInt(br.readLine());
             avgauswahl = Integer.parseInt(br.readLine());
             while ((st = br.readLine()) != null)
                 if (st.equals("compact") || st.equals("full")) {
@@ -78,7 +80,6 @@ public class AktieAPISQL extends Application {
         return false;
 
     }
-
     static void readURL(String tempAktie) throws Exception {
         try {
             URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=" + tempAktie + "&outputsize=" + type + "&apikey=" + key;
@@ -86,7 +87,6 @@ public class AktieAPISQL extends Application {
             System.out.println("Keine Internetverbingung");
         }
     }
-
     static void selectToCheck(String tempAktie) {
         try {
             myStmt = connection.createStatement();
@@ -97,7 +97,6 @@ public class AktieAPISQL extends Application {
             System.out.println("Es wurde noch kein Tabel angelegt");
         }
     }
-
     static boolean createTable(String tempAktie) throws SQLException {
         try {
             myStmt = connection.createStatement();
@@ -109,11 +108,12 @@ public class AktieAPISQL extends Application {
         }
         return false;
     }
-
     static boolean createTableClac(String tempAktie) throws SQLException {
         try {
             myStmt = connection.createStatement();
-            String createtable = "create table if not exists " + tempAktie + "_Calc (datum varchar(255) primary key, closeCorrect double, avg double, buysell varchar(255), buySellWert double);";
+            String createtable = "create table if not exists " + tempAktie + "_Calc (datum varchar(255) primary key, closeCorrect double, avg double);";
+            String showtable = "show tables;";
+            System.out.println(myStmt.executeUpdate(showtable));
             myStmt.executeUpdate(createtable);
             return true;
         } catch (SQLException e) {
@@ -121,8 +121,6 @@ public class AktieAPISQL extends Application {
         }
         return false;
     }
-
-    //owa eig miasat passn weil wenn ma a grafik mit de apiwerte moch schaugs unegfär gleich aus
     static void getWert(String URL) throws JSONException, IOException {
         JSONObject json = new JSONObject(IOUtils.toString(new URL(URL), Charset.forName("UTF-8")));
         json = json.getJSONObject("Time Series (Daily)");
@@ -132,7 +130,6 @@ public class AktieAPISQL extends Application {
             adjustedCoefficient.add(json.getJSONObject(LocalDate.parse((CharSequence) json.names().get(i)).toString()).getDouble("8. split coefficient"));
         }
     }
-
     static void clear() {
         daten.clear();
         closeWerte.clear();
@@ -142,8 +139,9 @@ public class AktieAPISQL extends Application {
         gleitenderDurchschnitt.clear();
         buySellList.clear();
         buySellWert.clear();
+        dreiProzentWert.clear();
+        dreiProzentList.clear();
     }
-
     static void writeDataInDB(String tempAktie) {
         try {
             for (int i = 0; i < daten.size(); i++) {
@@ -155,7 +153,6 @@ public class AktieAPISQL extends Application {
             e.printStackTrace();
         }
     }
-
     static void splitCorrection(String tempAktie) {
         ArrayList<Double> coe = new ArrayList<>();
         ArrayList<Double> close = new ArrayList<>();
@@ -184,7 +181,6 @@ public class AktieAPISQL extends Application {
         close.clear();
 
     }
-
     static void durchschnitt() {
         int count = 0;
         double wert = 0, x, avg;
@@ -204,48 +200,141 @@ public class AktieAPISQL extends Application {
             }
         }
     }
-
-    static void buySell() {
-        boolean buy = false;
-        double temp, temp2 = 0, tempSell, coefficient;
-        int anteile = 0, j = 0;
-        Collections.reverse(daten);
-        if (closeWerte.size() > 0 && gleitenderDurchschnitt.size() > 0) {
-            while(buy != true) {
-                if (gleitenderDurchschnitt.get(j) > closeWerte.get(j)) {
-                    buy = true;
-                } else {
-                    j++;
-                }
+    static void buySell(String tempAktie) {
+        ArrayList<String> dates = new ArrayList<>();
+        double tempBuy = 0, tempSell = 0;
+        int c = 0;
+        boolean buy = true, sell = false, durchlauf = true;
+        try {
+            ResultSet rsNormal = myStmt.executeQuery("SELECT * from " + tempAktie + "_Calc where datum >= '"+ kaufDatum +"'order by datum asc");
+            while (rsNormal.next()) {
+                dates.add(rsNormal.getString("datum"));
             }
-            for (int i = 0; i < daten.size(); i++) {
-                if (gleitenderDurchschnitt.get(i) > closeWerte.get(i)) {
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        for (int i = 0; i < dates.size(); i++) {
+            tempBuy = closeWerte.get(i) * 1.03;
+            if (tempBuy > gleitenderDurchschnitt.get(i) && buy && durchlauf) {
+                buySellList.add("buy");
+                buy = false;
+                sell = true;
+                durchlauf = false;
+            }
+            tempSell = closeWerte.get(i) * 0.97;
+            if (tempSell < gleitenderDurchschnitt.get(i) && sell && durchlauf) {
+                buySellList.add("sell");
+                buy = true;
+                sell = false;
+                durchlauf = false;
+            }
+            if(durchlauf) {
+                buySellList.add("x");
+                durchlauf = false;
+            }
+            durchlauf = true;
+        }
+        buySellCalc(dates);
+    }
+    static void buySellCalc(ArrayList buySellArr) {
+        double temp, temp2 = 0, tempSell, coefficient;
+        int anteile = 0;
+        boolean durchlauf = true;
+        for (int i = 0; i < buySellArr.size(); i++) {
+            if (buySellList.get(i).equals("buy")&&durchlauf) {
+                if (!adjustedCoefficient.equals(1.0)) {
+                    coefficient = adjustedCoefficient.get(i);
+                    temp = (depot / closeWerte.get(i));
+                    anteile = (int) temp / (int) coefficient;
+                } else {
                     temp = (depot / closeWerte.get(i));
                     anteile = (int) temp;
-                    buySellList.add("buy");
                 }
-                if(!adjustedCoefficient.equals(1.0)){
-                    coefficient = adjustedCoefficient.get(i);
-                    anteile = anteile/(int)coefficient;
-                }
-                if (gleitenderDurchschnitt.get(i) <= closeWerte.get(i)) {
-                    tempSell = anteile * closeWerte.get(i);
-                    temp2 = tempSell - depot;
-                    buySellWert.add((double) Math.round(temp2 * 100) / 100);
-                    verkaufswertEnde += tempSell;
-                    buySellList.add("sell");
-                }
-                else {
-                    buySellWert.add(0.0);
-                }
+                durchlauf = false;
+                buySellWert.add(0.0);
             }
-            Collections.reverse(daten);
+            if (buySellList.get(i).equals("sell")&&durchlauf) {
+                tempSell = anteile * closeWerte.get(i);
+                buySellWert.add(tempSell);
+                verkaufswertEnde += tempSell;
+                durchlauf = false;
+            }
+            if (durchlauf) {
+                buySellWert.add(0.0);
+                durchlauf = false;
+            }
+            durchlauf = true;
+            System.out.println(buySellList.get(i)+"  "+ buySellWert.get(i));
         }
     }
-
-
-    static void verkaufswert(String tempAktie){
-        ArrayList<Double> buySellArr = new ArrayList<>();
+    static void dreiProzent(String tempAktie) {
+        ArrayList<String> dates = new ArrayList<>();
+        double tempBuy = 0, tempSell = 0;
+        int c = 0;
+        boolean buy = true, sell = false, durchlauf = true;
+        try {
+            ResultSet rsNormal = myStmt.executeQuery("SELECT * from " + tempAktie + "_Calc where datum >= '"+ kaufDatum +"'order by datum asc");
+            while (rsNormal.next()) {
+                dates.add(rsNormal.getString("datum"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        for (int i = 0; i < dates.size(); i++) {
+            tempBuy = closeWerte.get(i) * 1.03;
+            if (tempBuy > gleitenderDurchschnitt.get(i) && buy && durchlauf) {
+                dreiProzentList.add("buy");
+                buy = false;
+                sell = true;
+                durchlauf = false;
+            }
+            tempSell = closeWerte.get(i) * 0.97;
+             if (tempSell < gleitenderDurchschnitt.get(i) && sell && durchlauf) {
+                dreiProzentList.add("sell");
+                buy = true;
+                sell = false;
+                durchlauf = false;
+            }
+            if(durchlauf) {
+                dreiProzentList.add("x");
+                durchlauf = false;
+            }
+            durchlauf = true;
+        }
+        dreiProzentCalc(dates);
+    }
+    static void dreiProzentCalc(ArrayList buySellArr) {
+        double temp, temp2 = 0, tempSell, coefficient;
+        int anteile = 0;
+        boolean durchlauf = true;
+        for (int i = 0; i < buySellArr.size(); i++) {
+            if (dreiProzentList.get(i).equals("buy")&&durchlauf) {
+                if (!adjustedCoefficient.equals(1.0)) {
+                    coefficient = adjustedCoefficient.get(i);
+                    temp = (depot / closeWerte.get(i));
+                    anteile = (int) temp / (int) coefficient;
+                } else {
+                    temp = (depot / closeWerte.get(i));
+                    anteile = (int) temp;
+                }
+                durchlauf = false;
+                dreiProzentWert.add(0.0);
+            }
+            if (dreiProzentList.get(i).equals("sell")&&durchlauf) {
+                tempSell = anteile * closeWerte.get(i);
+                dreiProzentWert.add(tempSell);
+                verkaufswertEnde += tempSell;
+                durchlauf = false;
+            }
+            if (durchlauf) {
+                dreiProzentWert.add(0.0);
+                durchlauf = false;
+            }
+            durchlauf = true;
+        }
+    }
+    static void verkaufswert(String tempAktie) {
+    /*    ArrayList<Double> buySellArr = new ArrayList<>();
         double temp2 = 0;
         try {
             ResultSet rsNormal = myStmt.executeQuery("SELECT * from " + tempAktie + "_Calc where datum >= '"+ kaufDatum +"'order by datum desc");
@@ -258,35 +347,22 @@ public class AktieAPISQL extends Application {
         for (double x: buySellArr) {
             temp2 += x;
         }
-        System.out.println("Verkaufswert: "+ temp2);
+        System.out.println("Verkaufswert: "+ temp2);*/
 
     }
-
-
-    static void writeCorrectDataInDB (String tempAktie){
+    static void writeCorrectDataInDB(String tempAktie) {
         try {
-            if (adjustedSplit.size() == 0) {
-                splitCorrection(tempAktie);
-            }
-            if (gleitenderDurchschnitt.size() == 0) {
-                durchschnitt();
-            }
-            if (buySellList.size() == 0) {
-                buySell();
-            }
-            if(buySellWert.size() == 0){
-                buySell();
-            }
             for (int i = 0; i < daten.size(); i++) {
-                String writeData = "insert ignore into " + tempAktie + "_Calc (datum, closeCorrect, avg, buysell, buySellWert) values('" + daten.get(i) + "', '" + adjustedSplit.get(i) + "', '" + gleitenderDurchschnitt.get(i) + "', '" + buySellList.get(i) + "', '" + buySellWert.get(i) + "');";
+                String writeData = "insert ignore into " + tempAktie + "_Calc (datum, closeCorrect, avg) values('" + daten.get(i) + "', '" + adjustedSplit.get(i) + "', '" + gleitenderDurchschnitt.get(i) + "');";
                 myStmt.executeUpdate(writeData);
+
             }
             System.out.println("Datensatz eingetragen");
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-    public static void getData (String tempAktie){
+    public static void getData(String tempAktie) {
         //Datenbank für javafx
         try {
             ResultSet rsNormal = myStmt.executeQuery("SELECT * from " + tempAktie + "_Calc");
@@ -299,10 +375,8 @@ public class AktieAPISQL extends Application {
         }
 
     }
-
-
     @Override
-    public void start (Stage primaryStage) throws SQLException, IOException {
+    public void start(Stage primaryStage) throws SQLException, IOException {
         try {
             inputUser();
             for (int x = 0; x < auswahlAktie.size(); x++) {
@@ -314,10 +388,11 @@ public class AktieAPISQL extends Application {
                 createTable(tempAktie);
                 createTableClac(tempAktie);
                 getWert(URL);
+                writeDataInDB(tempAktie);
                 splitCorrection(tempAktie);
                 durchschnitt();
-                buySell();
-                writeDataInDB(tempAktie);
+                buySell(tempAktie);
+                dreiProzent(tempAktie);
                 writeCorrectDataInDB(tempAktie);
                 verkaufswert(tempAktie);
                 getData(tempAktie);
@@ -335,24 +410,15 @@ public class AktieAPISQL extends Application {
                 lineChart.setTitle("Aktienkurs " + tempAktie);
                 XYChart.Series<String, Number> tatsaechlich = new XYChart.Series();
                 XYChart.Series<String, Number> durchschnitt = new XYChart.Series();
-                tatsaechlich.setName("Close-Werte " + sizeChart);
-                durchschnitt.setName("gleitender Durchschnitt " + sizeChart);
+                tatsaechlich.setName("Close-Werte " + kaufDatum);
+                durchschnitt.setName("gleitender Durchschnitt " + kaufDatum);
 
-              /*  if(sizeChart != "full") {
-                    for (int i = 0; i < Integer.parseInt(sizeChart); i++) {
-                        tatsaechlich.getData().add(new XYChart.Data(dateDB.get(i), adjustedSplit.get(i)));
-                    }
-                    for (int i = 0; i < Integer.parseInt(sizeChart); i++) {
-                        durchschnitt.getData().add(new XYChart.Data(dateDB.get(i), gleitenderDurchschnitt.get(i)));
-                    }
-                }
-                if (sizeChart == "full") {*/
+
                 for (int i = 0; i < dateDB.size() - 1; i++) {
                     tatsaechlich.getData().add(new XYChart.Data(dateDB.get(i), adjustedSplit.get(i)));
                 }
                 for (int i = 0; i < gleitenderDurchschnitt.size() - 1; i++) {
                     durchschnitt.getData().add(new XYChart.Data(dateDB.get(i), gleitenderDurchschnitt.get(i)));
-                    //  }
                 }
                 lineChart.getData().add(tatsaechlich);
                 lineChart.getData().add(durchschnitt);
