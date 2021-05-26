@@ -1,0 +1,204 @@
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+
+public class SIM extends AktieAPISQL{
+   public static AktieAPISQL a = new AktieAPISQL();
+   public static ArrayList<String> dates = new ArrayList<>();
+    public static ArrayList<Double> buySellWert = new ArrayList<>();
+    public static ArrayList<String> buySellList = new ArrayList<>();
+    public static ArrayList<Double> dreiProzentWert = new ArrayList<>();
+    public static ArrayList<String> dreiProzentList = new ArrayList<>();
+    public static ArrayList<Double> buyAndHold = new ArrayList<>();
+
+    public static void main(String[] args) throws SQLException {
+    }
+    public static void getDataFormCalc(){
+        try {
+            ResultSet rsNormal = a.myStmt.executeQuery("SELECT * from " + a.tempAktieSIM + "_ROH where datum >= '"+ a.kaufDatum +"'order by datum asc");
+            while (rsNormal.next()) {
+                dates.add(rsNormal.getString("datum"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    public static boolean createTableSIM(String tempAktie) throws SQLException {
+        try {
+            a.myStmt = a.connection.createStatement();
+            String createtable = "create table if not exists " + tempAktie + "_SIM (datum varchar(255) primary key, buySell varchar(255) , buySellWerte double, dreiProzent varchar(255) , dreiProzentWerte double, buyAndHold double);";
+            a.myStmt.executeUpdate(createtable);
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    public static void buySell() {
+        double tempBuy = 0, tempSell = 0;
+        int c = 0;
+        boolean buy = true, sell = false, durchlauf = true;
+        for (int i = 0; i < dates.size(); i++) {
+            if (a.closeWerte.get(i) > a.gleitenderDurchschnitt.get(i) && buy && durchlauf) {
+                buySellList.add("buy");
+                buy = false;
+                sell = true;
+                durchlauf = false;
+            }
+            if (a.closeWerte.get(i) < a.gleitenderDurchschnitt.get(i) && sell && durchlauf) {
+                buySellList.add("sell");
+                buy = true;
+                sell = false;
+                durchlauf = false;
+            }
+            if(durchlauf) {
+                buySellList.add("x");
+                durchlauf = false;
+            }
+            durchlauf = true;
+        }
+        buySellCalc();
+    }
+    public static void buySellCalc() {
+        double temp, temp2 = 0, tempSell, coefficient;
+        int anteile = 0;
+        boolean durchlauf = true;
+        for (int i = 0; i < dates.size(); i++) {
+            if (buySellList.get(i).equals("buy")&&durchlauf) {
+                if (!a.adjustedCoefficient.equals(1.0)) {
+                    coefficient = a.adjustedCoefficient.get(i);
+                    temp = (a.depot /a.closeWerte.get(i));
+                    anteile = (int) temp / (int) coefficient;
+                } else {
+                    temp = (a.depot / a.closeWerte.get(i));
+                    anteile = (int) temp;
+                }
+                durchlauf = false;
+                buySellWert.add(0.0);
+            }
+            if (buySellList.get(i).equals("sell")&&durchlauf) {
+                tempSell = anteile * a.closeWerte.get(i);
+                buySellWert.add(tempSell);
+                a.verkaufswertEnde += tempSell;
+                durchlauf = false;
+            }
+            if (durchlauf) {
+                buySellWert.add(0.0);
+                durchlauf = false;
+            }
+            durchlauf = true;
+        }
+    }
+    public static void dreiProzent() {
+        double tempBuy = 0, tempSell = 0;
+        int c = 0;
+        boolean buy = true, sell = false, durchlauf = true;
+        for (int i = 0; i < dates.size(); i++) {
+            tempBuy = a.closeWerte.get(i) * 1.03;
+            if (tempBuy > a.gleitenderDurchschnitt.get(i) && buy && durchlauf) {
+                dreiProzentList.add("buy");
+                buy = false;
+                sell = true;
+                durchlauf = false;
+            }
+            tempSell = a.closeWerte.get(i) * 0.97;
+            if (tempSell < a.gleitenderDurchschnitt.get(i) && sell && durchlauf) {
+                dreiProzentList.add("sell");
+                buy = true;
+                sell = false;
+                durchlauf = false;
+            }
+            if(durchlauf) {
+                dreiProzentList.add("x");
+                durchlauf = false;
+            }
+            durchlauf = true;
+        }
+        dreiProzentCalc();
+    }
+    public static void dreiProzentCalc() {
+        double temp, temp2 = 0, tempSell, coefficient;
+        int anteile = 0;
+        boolean durchlauf = true;
+        for (int i = 0; i < dates.size(); i++) {
+            if (dreiProzentList.get(i).equals("buy")&&durchlauf) {
+                if (!a.adjustedCoefficient.equals(1.0)) {
+                    coefficient = a.adjustedCoefficient.get(i);
+                    temp = (a.depot / a.closeWerte.get(i));
+                    anteile = (int) temp / (int) coefficient;
+                } else {
+                    temp = (a.depot / a.closeWerte.get(i));
+                    anteile = (int) temp;
+                }
+                durchlauf = false;
+                dreiProzentWert.add(0.0);
+            }
+            if (dreiProzentList.get(i).equals("sell")&&durchlauf) {
+                tempSell = anteile * a.closeWerte.get(i);
+                dreiProzentWert.add(tempSell);
+                a.verkaufswertEnde += tempSell;
+                durchlauf = false;
+            }
+            if (durchlauf) {
+                dreiProzentWert.add(0.0);
+                durchlauf = false;
+            }
+            durchlauf = true;
+        }
+    }
+    public static void buyAndHold() {
+        double temp, temp2;
+        int anteile = 0;
+        boolean durchlauf = true, verkauf = false;
+        String verkaufsDatum;
+        for (int i = 0; i < dates.size(); i++) {
+            if (dates.get(0) == dates.get(i) && durchlauf) {
+                temp = (a.depot / a.closeWerte.get(i));
+                anteile = (int) temp;
+                durchlauf = false;
+                buyAndHold.add(0.0);
+            }
+
+            verkaufsDatum = dates.get(dates.size() - 1);
+            if (verkaufsDatum == dates.get(i) && durchlauf) {
+                temp2 = anteile * a.closeWerte.get(i);
+                buyAndHold.add(temp2);
+                durchlauf = false;
+                verkauf = true;
+            } if(durchlauf) {
+                buyAndHold.add(0.0);
+                durchlauf = false;
+            }
+            durchlauf = true;
+        }
+    }
+    public static void writeSIMDataInDB() {
+        try {
+            for (int i = 0; i < dates.size(); i++) {
+                String writeData = "insert ignore into " + a.tempAktieSIM+"_SIM (datum, buySell, buySellWerte, dreiProzent, dreiProzentWerte, buyAndHold) values('" + dates.get(i) + "', '" + buySellList.get(i) + "', '" + buySellWert.get(i) + "', '" +dreiProzentList.get(i) + "', '" + dreiProzentWert.get(i) + "', '" + buyAndHold.get(i) + "');";
+                a.myStmt.executeUpdate(writeData);
+            }
+           // System.out.println("Datensatz eingetragen");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void output(){
+        double temp = 0, temp2 = 0, temp3 = 0;
+        System.out.println(a.tempAktieSIM);
+        System.out.println("depot: "+a.depot);
+        for(int i = 0; i < dates.size(); i++) {
+            temp += buySellWert.get(i);
+            temp2 += dreiProzentWert.get(i);
+            temp3 +=
+
+                    buyAndHold.get(i);
+        }
+        System.out.println("200er Strategie: "+ Math.round((temp*100)/100));
+        System.out.println("3 Prozent: "+ Math.round((temp2*100)/100));
+        System.out.println("Buy and Hold: "+ Math.round((temp3*100)/100));
+        System.out.println(" ");
+    }
+
+}
