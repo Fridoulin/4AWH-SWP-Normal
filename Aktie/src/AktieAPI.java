@@ -22,32 +22,30 @@ import javafx.application.Application;
 
 import javax.imageio.ImageIO;
 
-public class Test2 extends Application {
-    static Statement myStmt;
+public class AktieAPISQL extends Application {
+    public static SIM s = new SIM();
+
+    public static Statement myStmt;
     public static Connection connection;
 
-    static ArrayList<Double> closeWerte = new ArrayList<>();
-    static ArrayList<Double> gleitenderDurchschnitt = new ArrayList<>();
-    static ArrayList<String> daten = new ArrayList<>();
-    static ArrayList<String> dateDB = new ArrayList<>();
-    static ArrayList<Double> adjustedSplit = new ArrayList<>();
-    static ArrayList<String> auswahlAktie = new ArrayList<>();
-    static ArrayList<Double> adjustedCoefficient = new ArrayList<>();
-    static ArrayList<Double> buySellWert = new ArrayList<>();
-    static ArrayList<String> buySellList = new ArrayList<>();
-    static ArrayList<Double> dreiProzentWert = new ArrayList<>();
-    static ArrayList<String> dreiProzentList = new ArrayList<>();
-    static String URL, type, key, verzeichnis, aktienDB, kaufDatum;
-    static int avgauswahl;
-    static double depot, verkaufswertEnde = 0;
+    public static ArrayList<Double> closeWerte = new ArrayList<>();
+    public static ArrayList<Double> gleitenderDurchschnitt = new ArrayList<>();
+    public static ArrayList<String> daten = new ArrayList<>();
+    public static ArrayList<String> dateDB = new ArrayList<>();
+    public static ArrayList<Double> adjustedSplit = new ArrayList<>();
+    public static ArrayList<String> auswahlAktie = new ArrayList<>();
+    public static ArrayList<Double> adjustedCoefficient = new ArrayList<>();
+    public static String URL, type, key, verzeichnis, aktienDB, kaufDatum, tempAktieSIM;
+    public static int avgauswahl;
+    public static double depot, verkaufswertEnde = 0;
 
-    public static void main(String args[]) throws IOException {
+    public static void main(String args[]) throws IOException, SQLException {
         Application.launch(args);
     }
 
     public void inputUser() throws IOException {
         try {
-            File file = new File("C:\\Users\\nisch\\IdeaProjects\\Aktie\\src\\aktien.txt"); //Pfad
+            File file = new File("C:\\Users\\nisch\\IdeaProjects\\AktieAPISQL\\src\\aktien.txt"); //Pfad
             BufferedReader br = new BufferedReader(new FileReader(file));
             String st;
             key = br.readLine();
@@ -72,7 +70,7 @@ public class Test2 extends Application {
 
             connection = DriverManager.getConnection(DBurl, "root", "NicerSpeck#");
             myStmt = connection.createStatement();
-            System.out.println("Datenbank verknüpft");
+          //  System.out.println("Datenbank verknüpft");
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -84,7 +82,7 @@ public class Test2 extends Application {
         try {
             URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=" + tempAktie + "&outputsize=" + type + "&apikey=" + key;
         } catch (Exception e) {
-            System.out.println("Keine Internetverbingung");
+            //System.out.println("Keine Internetverbingung");
         }
     }
     static void selectToCheck(String tempAktie) {
@@ -92,9 +90,9 @@ public class Test2 extends Application {
             myStmt = connection.createStatement();
             String querry = "select * from " + tempAktie + ";";
             ResultSet rs = myStmt.executeQuery(querry);
-            System.out.println("Es ist ein Table verfügbar");
+           // System.out.println("Es ist ein Table verfügbar");
         } catch (SQLException e) {
-            System.out.println("Es wurde noch kein Tabel angelegt");
+           // System.out.println("Es wurde noch kein Table angelegt");
         }
     }
     static boolean createTable(String tempAktie) throws SQLException {
@@ -112,8 +110,8 @@ public class Test2 extends Application {
         try {
             myStmt = connection.createStatement();
             String createtable = "create table if not exists " + tempAktie + "_Calc (datum varchar(255) primary key, closeCorrect double, avg double);";
-            String showtable = "show tables;";
-            System.out.println(myStmt.executeUpdate(showtable));
+           // String showtable = "show tables;";
+          //  System.out.println(myStmt.executeUpdate(showtable));
             myStmt.executeUpdate(createtable);
             return true;
         } catch (SQLException e) {
@@ -137,10 +135,12 @@ public class Test2 extends Application {
         adjustedSplit.clear();
         dateDB.clear();
         gleitenderDurchschnitt.clear();
-        buySellList.clear();
-        buySellWert.clear();
-        dreiProzentWert.clear();
-        dreiProzentList.clear();
+        s.buySellList.clear();
+        s.buySellWert.clear();
+        s.dreiProzentWert.clear();
+        s.dreiProzentList.clear();
+        s.buyAndHold.clear();
+        s.dates.clear();
     }
     static void writeDataInDB(String tempAktie) {
         try {
@@ -148,7 +148,7 @@ public class Test2 extends Application {
                 String writeData = "insert ignore into " + tempAktie + "_Roh (datum, close, split) values('" + daten.get(i) + "', '" + closeWerte.get(i) + "', '" + adjustedCoefficient.get(i) + "');";
                 myStmt.executeUpdate(writeData);
             }
-            System.out.println("Rohdaten eingetragen");
+           //System.out.println("Rohdaten eingetragen");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -200,156 +200,6 @@ public class Test2 extends Application {
             }
         }
     }
-    static void buySell(String tempAktie) {
-        ArrayList<String> dates = new ArrayList<>();
-        double tempBuy = 0, tempSell = 0;
-        int c = 0;
-        boolean buy = true, sell = false, durchlauf = true;
-        try {
-            ResultSet rsNormal = myStmt.executeQuery("SELECT * from " + tempAktie + "_Calc where datum >= '"+ kaufDatum +"'order by datum asc");
-            while (rsNormal.next()) {
-                dates.add(rsNormal.getString("datum"));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        for (int i = 0; i < dates.size(); i++) {
-            tempBuy = closeWerte.get(i) * 1.03;
-            if (tempBuy > gleitenderDurchschnitt.get(i) && buy && durchlauf) {
-                buySellList.add("buy");
-                buy = false;
-                sell = true;
-                durchlauf = false;
-            }
-            tempSell = closeWerte.get(i) * 0.97;
-            if (tempSell < gleitenderDurchschnitt.get(i) && sell && durchlauf) {
-                buySellList.add("sell");
-                buy = true;
-                sell = false;
-                durchlauf = false;
-            }
-            if(durchlauf) {
-                buySellList.add("x");
-                durchlauf = false;
-            }
-            durchlauf = true;
-        }
-        buySellCalc(dates);
-    }
-    static void buySellCalc(ArrayList buySellArr) {
-        double temp, temp2 = 0, tempSell, coefficient;
-        int anteile = 0;
-        boolean durchlauf = true;
-        for (int i = 0; i < buySellArr.size(); i++) {
-            if (buySellList.get(i).equals("buy")&&durchlauf) {
-                if (!adjustedCoefficient.equals(1.0)) {
-                    coefficient = adjustedCoefficient.get(i);
-                    temp = (depot / closeWerte.get(i));
-                    anteile = (int) temp / (int) coefficient;
-                } else {
-                    temp = (depot / closeWerte.get(i));
-                    anteile = (int) temp;
-                }
-                durchlauf = false;
-                buySellWert.add(0.0);
-            }
-            if (buySellList.get(i).equals("sell")&&durchlauf) {
-                tempSell = anteile * closeWerte.get(i);
-                buySellWert.add(tempSell);
-                verkaufswertEnde += tempSell;
-                durchlauf = false;
-            }
-            if (durchlauf) {
-                buySellWert.add(0.0);
-                durchlauf = false;
-            }
-            durchlauf = true;
-            System.out.println(buySellList.get(i)+"  "+ buySellWert.get(i));
-        }
-    }
-    static void dreiProzent(String tempAktie) {
-        ArrayList<String> dates = new ArrayList<>();
-        double tempBuy = 0, tempSell = 0;
-        int c = 0;
-        boolean buy = true, sell = false, durchlauf = true;
-        try {
-            ResultSet rsNormal = myStmt.executeQuery("SELECT * from " + tempAktie + "_Calc where datum >= '"+ kaufDatum +"'order by datum asc");
-            while (rsNormal.next()) {
-                dates.add(rsNormal.getString("datum"));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        for (int i = 0; i < dates.size(); i++) {
-            tempBuy = closeWerte.get(i) * 1.03;
-            if (tempBuy > gleitenderDurchschnitt.get(i) && buy && durchlauf) {
-                dreiProzentList.add("buy");
-                buy = false;
-                sell = true;
-                durchlauf = false;
-            }
-            tempSell = closeWerte.get(i) * 0.97;
-             if (tempSell < gleitenderDurchschnitt.get(i) && sell && durchlauf) {
-                dreiProzentList.add("sell");
-                buy = true;
-                sell = false;
-                durchlauf = false;
-            }
-            if(durchlauf) {
-                dreiProzentList.add("x");
-                durchlauf = false;
-            }
-            durchlauf = true;
-        }
-        dreiProzentCalc(dates);
-    }
-    static void dreiProzentCalc(ArrayList buySellArr) {
-        double temp, temp2 = 0, tempSell, coefficient;
-        int anteile = 0;
-        boolean durchlauf = true;
-        for (int i = 0; i < buySellArr.size(); i++) {
-            if (dreiProzentList.get(i).equals("buy")&&durchlauf) {
-                if (!adjustedCoefficient.equals(1.0)) {
-                    coefficient = adjustedCoefficient.get(i);
-                    temp = (depot / closeWerte.get(i));
-                    anteile = (int) temp / (int) coefficient;
-                } else {
-                    temp = (depot / closeWerte.get(i));
-                    anteile = (int) temp;
-                }
-                durchlauf = false;
-                dreiProzentWert.add(0.0);
-            }
-            if (dreiProzentList.get(i).equals("sell")&&durchlauf) {
-                tempSell = anteile * closeWerte.get(i);
-                dreiProzentWert.add(tempSell);
-                verkaufswertEnde += tempSell;
-                durchlauf = false;
-            }
-            if (durchlauf) {
-                dreiProzentWert.add(0.0);
-                durchlauf = false;
-            }
-            durchlauf = true;
-        }
-    }
-    static void verkaufswert(String tempAktie) {
-    /*    ArrayList<Double> buySellArr = new ArrayList<>();
-        double temp2 = 0;
-        try {
-            ResultSet rsNormal = myStmt.executeQuery("SELECT * from " + tempAktie + "_Calc where datum >= '"+ kaufDatum +"'order by datum desc");
-            while (rsNormal.next()) {
-                buySellArr.add(rsNormal.getDouble("buySellWert"));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        for (double x: buySellArr) {
-            temp2 += x;
-        }
-        System.out.println("Verkaufswert: "+ temp2);*/
-
-    }
     static void writeCorrectDataInDB(String tempAktie) {
         try {
             for (int i = 0; i < daten.size(); i++) {
@@ -357,7 +207,7 @@ public class Test2 extends Application {
                 myStmt.executeUpdate(writeData);
 
             }
-            System.out.println("Datensatz eingetragen");
+            //System.out.println("Datensatz eingetragen");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -391,10 +241,15 @@ public class Test2 extends Application {
                 writeDataInDB(tempAktie);
                 splitCorrection(tempAktie);
                 durchschnitt();
-                buySell(tempAktie);
-                dreiProzent(tempAktie);
+                tempAktieSIM = tempAktie;
+                s.getDataFormCalc();
+                s.createTableSIM(tempAktieSIM);
+                s.buySell();
+                s.dreiProzent();
+                s.buyAndHold();
+                s.writeSIMDataInDB();
+                s.output();
                 writeCorrectDataInDB(tempAktie);
-                verkaufswert(tempAktie);
                 getData(tempAktie);
 
                 Collections.reverse(adjustedSplit);
@@ -446,7 +301,7 @@ public class Test2 extends Application {
                 directory.mkdir();
                 File file = new File(verzeichnis + "Image\\" + newFolder + "\\" + tempAktie + " " + LocalDate.now().minusDays(1) + ".png"); //Pfad einfügen
                 ImageIO.write(SwingFXUtils.fromFXImage(image, null), "PNG", file);
-                System.out.println("Image Saved " + tempAktie);
+                //System.out.println("Image Saved " + tempAktie);
             }
         } catch (Exception e) {
             e.printStackTrace();
