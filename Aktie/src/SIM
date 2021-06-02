@@ -4,21 +4,24 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 
 public class SIM extends AktieAPISQL{
-   public static AktieAPISQL a = new AktieAPISQL();
-   public static ArrayList<String> dates = new ArrayList<>();
+    public static AktieAPISQL a = new AktieAPISQL();
+    public static ArrayList<String> dates = new ArrayList<>();
+    public static ArrayList<Double> close = new ArrayList<>();
     public static ArrayList<Double> buySellWert = new ArrayList<>();
     public static ArrayList<String> buySellList = new ArrayList<>();
     public static ArrayList<Double> dreiProzentWert = new ArrayList<>();
     public static ArrayList<String> dreiProzentList = new ArrayList<>();
     public static ArrayList<Double> buyAndHold = new ArrayList<>();
 
-    public static void main(String[] args) throws SQLException {
-    }
+    //gewinn-verlust-kurve
+    //1 Depot auf mehrere Aktien aufteilen
+
     public static void getDataFormCalc(){
         try {
             ResultSet rsNormal = a.myStmt.executeQuery("SELECT * from " + a.tempAktieSIM + "_ROH where datum >= '"+ a.kaufDatum +"'order by datum asc");
             while (rsNormal.next()) {
                 dates.add(rsNormal.getString("datum"));
+                close.add(rsNormal.getDouble("close"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -27,7 +30,7 @@ public class SIM extends AktieAPISQL{
     public static boolean createTableSIM(String tempAktie) throws SQLException {
         try {
             a.myStmt = a.connection.createStatement();
-            String createtable = "create table if not exists " + tempAktie + "_SIM (datum varchar(255) primary key, buySell varchar(255) , buySellWerte double, dreiProzent varchar(255) , dreiProzentWerte double, buyAndHold double);";
+            String createtable = "create table if not exists " + tempAktie + "_SIM (datum varchar(255) primary  key, buySell varchar(255) , buySellWerte double, dreiProzent varchar(255) , dreiProzentWerte double, buyAndHold double);";
             a.myStmt.executeUpdate(createtable);
             return true;
         } catch (SQLException e) {
@@ -40,13 +43,13 @@ public class SIM extends AktieAPISQL{
         int c = 0;
         boolean buy = true, sell = false, durchlauf = true;
         for (int i = 0; i < dates.size(); i++) {
-            if (a.closeWerte.get(i) > a.gleitenderDurchschnitt.get(i) && buy && durchlauf) {
+            if (close.get(i) > a.gleitenderDurchschnitt.get(i) && buy && durchlauf) {
                 buySellList.add("buy");
                 buy = false;
                 sell = true;
                 durchlauf = false;
             }
-            if (a.closeWerte.get(i) < a.gleitenderDurchschnitt.get(i) && sell && durchlauf) {
+            if (close.get(i) < a.gleitenderDurchschnitt.get(i) && sell && durchlauf) {
                 buySellList.add("sell");
                 buy = true;
                 sell = false;
@@ -68,17 +71,17 @@ public class SIM extends AktieAPISQL{
             if (buySellList.get(i).equals("buy")&&durchlauf) {
                 if (!a.adjustedCoefficient.equals(1.0)) {
                     coefficient = a.adjustedCoefficient.get(i);
-                    temp = (a.depot /a.closeWerte.get(i));
+                    temp = (a.depot /close.get(i));
                     anteile = (int) temp / (int) coefficient;
                 } else {
-                    temp = (a.depot / a.closeWerte.get(i));
+                    temp = (a.depot / close.get(i));
                     anteile = (int) temp;
                 }
                 durchlauf = false;
                 buySellWert.add(0.0);
             }
             if (buySellList.get(i).equals("sell")&&durchlauf) {
-                tempSell = anteile * a.closeWerte.get(i);
+                tempSell = anteile * close.get(i);
                 buySellWert.add(tempSell);
                 a.verkaufswertEnde += tempSell;
                 durchlauf = false;
@@ -95,14 +98,14 @@ public class SIM extends AktieAPISQL{
         int c = 0;
         boolean buy = true, sell = false, durchlauf = true;
         for (int i = 0; i < dates.size(); i++) {
-            tempBuy = a.closeWerte.get(i) * 1.03;
+            tempBuy = close.get(i) * 1.03;
             if (tempBuy > a.gleitenderDurchschnitt.get(i) && buy && durchlauf) {
                 dreiProzentList.add("buy");
                 buy = false;
                 sell = true;
                 durchlauf = false;
             }
-            tempSell = a.closeWerte.get(i) * 0.97;
+            tempSell = close.get(i) * 0.97;
             if (tempSell < a.gleitenderDurchschnitt.get(i) && sell && durchlauf) {
                 dreiProzentList.add("sell");
                 buy = true;
@@ -125,17 +128,17 @@ public class SIM extends AktieAPISQL{
             if (dreiProzentList.get(i).equals("buy")&&durchlauf) {
                 if (!a.adjustedCoefficient.equals(1.0)) {
                     coefficient = a.adjustedCoefficient.get(i);
-                    temp = (a.depot / a.closeWerte.get(i));
+                    temp = (a.depot / close.get(i));
                     anteile = (int) temp / (int) coefficient;
                 } else {
-                    temp = (a.depot / a.closeWerte.get(i));
+                    temp = (a.depot / close.get(i));
                     anteile = (int) temp;
                 }
                 durchlauf = false;
                 dreiProzentWert.add(0.0);
             }
             if (dreiProzentList.get(i).equals("sell")&&durchlauf) {
-                tempSell = anteile * a.closeWerte.get(i);
+                tempSell = anteile * close.get(i);
                 dreiProzentWert.add(tempSell);
                 a.verkaufswertEnde += tempSell;
                 durchlauf = false;
@@ -154,7 +157,7 @@ public class SIM extends AktieAPISQL{
         String verkaufsDatum;
         for (int i = 0; i < dates.size(); i++) {
             if (dates.get(0) == dates.get(i) && durchlauf) {
-                temp = (a.depot / a.closeWerte.get(i));
+                temp = (a.depot / close.get(i));
                 anteile = (int) temp;
                 durchlauf = false;
                 buyAndHold.add(0.0);
@@ -162,7 +165,8 @@ public class SIM extends AktieAPISQL{
 
             verkaufsDatum = dates.get(dates.size() - 1);
             if (verkaufsDatum == dates.get(i) && durchlauf) {
-                temp2 = anteile * a.closeWerte.get(i);
+                System.out.println(anteile+ "  "+close.get(i));
+                temp2 = anteile * close.get(i);
                 buyAndHold.add(temp2);
                 durchlauf = false;
                 verkauf = true;
@@ -179,7 +183,7 @@ public class SIM extends AktieAPISQL{
                 String writeData = "insert ignore into " + a.tempAktieSIM+"_SIM (datum, buySell, buySellWerte, dreiProzent, dreiProzentWerte, buyAndHold) values('" + dates.get(i) + "', '" + buySellList.get(i) + "', '" + buySellWert.get(i) + "', '" +dreiProzentList.get(i) + "', '" + dreiProzentWert.get(i) + "', '" + buyAndHold.get(i) + "');";
                 a.myStmt.executeUpdate(writeData);
             }
-           // System.out.println("Datensatz eingetragen");
+            // System.out.println("Datensatz eingetragen");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -191,9 +195,7 @@ public class SIM extends AktieAPISQL{
         for(int i = 0; i < dates.size(); i++) {
             temp += buySellWert.get(i);
             temp2 += dreiProzentWert.get(i);
-            temp3 +=
-
-                    buyAndHold.get(i);
+            temp3 += buyAndHold.get(i);
         }
         System.out.println("200er Strategie: "+ Math.round((temp*100)/100));
         System.out.println("3 Prozent: "+ Math.round((temp2*100)/100));
