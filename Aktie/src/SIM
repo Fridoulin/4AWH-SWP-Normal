@@ -1,304 +1,301 @@
-import java.io.IOException;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.Scene;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import javafx.scene.image.WritableImage;
+import javafx.stage.Stage;
+import org.apache.commons.io.IOUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.*;
+import java.net.URL;
+import java.nio.charset.Charset;
 import java.sql.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
 
-public class SIM {
+import javafx.application.Application;
+
+import javax.imageio.ImageIO;
+
+public class AktieAPISQL extends Application {
+    public static SIM s = new SIM();
+
     public static Statement myStmt;
     public static Connection connection;
-    public static AktieAPISQL a = new AktieAPISQL();
 
-    public static void main(String[] args) throws SQLException, IOException {
-        double depotAufgeteilt;
-        a.inputUser();
-        depotAufgeteilt = a.depot/a.auswahlAktie.size();
-        for (int i = 0; i < a.auswahlAktie.size(); i++) {
-            zweihundeter(i, depotAufgeteilt);
-            dreiProzent(i, depotAufgeteilt);
-            buyAndHold(i,depotAufgeteilt);
-            vergleich(i,depotAufgeteilt);
-        }
+    public static ArrayList<Double> closeWerte = new ArrayList<>();
+    public static ArrayList<Double> gleitenderDurchschnitt = new ArrayList<>();
+    public static ArrayList<String> daten = new ArrayList<>();
+    public static ArrayList<String> dateDB = new ArrayList<>();
+    public static ArrayList<Double> adjustedSplit = new ArrayList<>();
+    public static ArrayList<String> auswahlAktie = new ArrayList<>();
+    public static ArrayList<Double> adjustedCoefficient = new ArrayList<>();
+    public static String URL, type, key, verzeichnis, aktienDB, kaufDatum, tempAktieSIM;
+    public static int avgauswahl;
+    public static double depot;
+
+    public static void main(String args[]) throws IOException, SQLException {
+        Application.launch(args);
     }
 
+    public void inputUser() throws IOException {
+        try {
+            File file = new File("C:\\Users\\nisch\\IdeaProjects\\AktieAPISQL\\src\\aktien.txt"); //Pfad
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            String st;
+            key = br.readLine();
+            verzeichnis = br.readLine();
+            aktienDB = br.readLine();
+            kaufDatum = br.readLine();
+            depot = Integer.parseInt(br.readLine());
+            avgauswahl = Integer.parseInt(br.readLine());
+            while ((st = br.readLine()) != null)
+                if (st.equals("compact") || st.equals("full")) {
+                    type = st;
+                } else {
+                    auswahlAktie.add(st);
+                }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     static boolean connectToMySql() throws SQLException {
         try {
-            String DBurl = "jdbc:mysql://localhost:3306/" + a.aktienDB + "?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
+            String DBurl = "jdbc:mysql://localhost:3306/" + aktienDB + "?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
+
             connection = DriverManager.getConnection(DBurl, "root", "NicerSpeck#");
             myStmt = connection.createStatement();
+            //  System.out.println("Datenbank verknüpft");
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return false;
     }
-    public static boolean db(String tempAktie, LocalDate date, String ticker, int flag, int amount, double depot, float close) throws SQLException {
+    static void readURL(String tempAktie) throws Exception {
         try {
-            connectToMySql();
+            URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=" + tempAktie + "&outputsize=" + type + "&apikey=" + key;
+        } catch (Exception e) {
+            //System.out.println("Keine Internetverbingung");
+        }
+    }
+    static void selectToCheck(String tempAktie) {
+        try {
             myStmt = connection.createStatement();
-            String droptable = "drop table if exists " + tempAktie;
-            String createtable = "CREATE TABLE IF NOT EXISTS " + tempAktie + " (datum date primary key, ticker varchar(5), flag bool, amount integer, depot double, close float );;";
-            String insert = "INSERT INTO " + tempAktie + " (datum,ticker,flag,amount,depot, close) VALUES ('" + date + "', '" + ticker + "', '" + flag + "', '" + amount + "', '" + depot + "', '" + close + "');";
-            myStmt.executeUpdate(droptable);
+            String querry = "select * from " + tempAktie + ";";
+            ResultSet rs = myStmt.executeQuery(querry);
+            // System.out.println("Es ist ein Table verfügbar");
+        } catch (SQLException e) {
+            // System.out.println("Es wurde noch kein Table angelegt");
+        }
+    }
+    static boolean createTable(String tempAktie) throws SQLException {
+        try {
+            myStmt = connection.createStatement();
+            String createdb = "create database if not exists aktiendb;";
+            String usedb = "use aktiendb;";
+            String createtable = "create table if not exists " + tempAktie + "_Roh (datum varchar(255) primary key, close double, split double);";
+            myStmt.executeUpdate(createdb);
+            myStmt.executeUpdate(usedb);
             myStmt.executeUpdate(createtable);
-            myStmt.executeUpdate(insert);
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return false;
     }
-
-    public static boolean getDBDate(String tablename, LocalDate date) {
+    static boolean createTableClac(String tempAktie) throws SQLException {
         try {
             myStmt = connection.createStatement();
-            ResultSet rs = myStmt.executeQuery("SELECT datum FROM " + tablename + "_calc WHERE datum = '" + date + "' ORDER BY datum ASC");
-            if (rs.next()) {
-                return true;
-            }
+            String createtable = "create table if not exists " + tempAktie + "_Calc (datum varchar(255) primary key, closeCorrect double, avg double);";
+            // String showtable = "show tables;";
+            //  System.out.println(myStmt.executeUpdate(showtable));
+            myStmt.executeUpdate(createtable);
+            return true;
         } catch (SQLException e) {
-            System.out.println("Methode getDate: " + e.getMessage());
+            e.printStackTrace();
         }
         return false;
     }
-
-    public static boolean getFlag(String tablename) {
+    static void getWert(String URL) throws JSONException, IOException {
+        JSONObject json = new JSONObject(IOUtils.toString(new URL(URL), Charset.forName("UTF-8")));
+        json = json.getJSONObject("Time Series (Daily)");
+        for (int i = 0; i < json.names().length(); i++) {
+            daten.add(LocalDate.parse((CharSequence) json.names().get(i)).toString());
+            closeWerte.add(json.getJSONObject(LocalDate.parse((CharSequence) json.names().get(i)).toString()).getDouble("4. close"));
+            adjustedCoefficient.add(json.getJSONObject(LocalDate.parse((CharSequence) json.names().get(i)).toString()).getDouble("8. split coefficient"));
+        }
+    }
+    static void clear() {
+        daten.clear();
+        closeWerte.clear();
+        adjustedCoefficient.clear();
+        adjustedSplit.clear();
+        dateDB.clear();
+        gleitenderDurchschnitt.clear();
+    }
+    static void writeDataInDB(String tempAktie) {
         try {
-            myStmt = connection.createStatement();
-            ResultSet rs = myStmt.executeQuery("SELECT flag FROM " + tablename + " ORDER BY datum DESC LIMIT 1");
-            if (rs.next()) {
+            for (int i = 0; i < daten.size(); i++) {
+                String writeData = "insert ignore into " + tempAktie + "_Roh (datum, close, split) values('" + daten.get(i) + "', '" + closeWerte.get(i) + "', '" + adjustedCoefficient.get(i) + "');";
+                myStmt.executeUpdate(writeData);
+            }
+            //System.out.println("Rohdaten eingetragen");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    static void splitCorrection(String tempAktie) {
+        ArrayList<Double> coe = new ArrayList<>();
+        ArrayList<Double> close = new ArrayList<>();
 
-                return rs.getBoolean("flag");
+        double coefficient = 1.0;
+        try {
+            String querry = "SELECT * from " + tempAktie + "_Roh order by datum desc;";
+            ResultSet rs = myStmt.executeQuery(querry);
+            while (rs.next()) {
+                close.add(rs.getDouble("close"));
+                coe.add(rs.getDouble("split"));
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        for (int i = 0; i < coe.size(); i++) {
+            if (coe.get(2) <= i) {
+                coefficient *= coe.get(i - 1);
+                adjustedSplit.add(close.get(i) / coefficient);
+            } else {
+                coefficient *= coe.get(i);
+                adjustedSplit.add(close.get(i) / coefficient);
+            }
+        }
+        coe.clear();
+        close.clear();
+
+    }
+    static void durchschnitt() {
+        int count = 0;
+        double wert = 0, x, avg;
+        for (int i = 0; i <= adjustedSplit.size() - 1; i++) {
+            count++;
+            if (count <= avgauswahl) {
+                wert = wert + adjustedSplit.get(i);
+                avg = wert / count;
+                gleitenderDurchschnitt.add(avg);
+            }
+            if (count > avgauswahl) {
+                x = adjustedSplit.get(i - avgauswahl);
+                wert = wert - x;
+                wert = wert + adjustedSplit.get(i);
+                avg = wert / avgauswahl;
+                gleitenderDurchschnitt.add(avg);
+            }
+        }
+    }
+    static void writeCorrectDataInDB(String tempAktie) {
+        try {
+            for (int i = 0; i < daten.size(); i++) {
+                String writeData = "insert ignore into " + tempAktie + "_Calc (datum, closeCorrect, avg) values('" + daten.get(i) + "', '" + adjustedSplit.get(i) + "', '" + gleitenderDurchschnitt.get(i) + "');";
+                myStmt.executeUpdate(writeData);
+
+            }
+            //System.out.println("Datensatz eingetragen");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void getData(String tempAktie) {
+        //Datenbank für javafx
+        try {
+            ResultSet rsNormal = myStmt.executeQuery("SELECT * from " + tempAktie + "_Calc");
+            while (rsNormal.next()) {
+
+                dateDB.add(rsNormal.getString("datum"));
             }
         } catch (SQLException e) {
-            System.out.println("Methode dbGetFlag: " + e.getMessage());
+            e.printStackTrace();
         }
-        return false;
-    }
 
-    public static Float getAdjustedClose(String tablename, LocalDate date) {
+    }
+    @Override
+    public void start(Stage primaryStage) throws SQLException, IOException, InterruptedException {
         try {
-            myStmt = connection.createStatement();
-            ResultSet rs = myStmt.executeQuery("SELECT closeCorrect FROM " + tablename + "_calc WHERE datum = '" + date + "' ORDER BY datum ASC");
-            if (rs.next()) {
-                return rs.getFloat("closeCorrect");
-            }
-        } catch (SQLException e) {
-            System.out.println("Methode getAdjustedClose: " + e.getMessage());
-        }
-        return null;
-    }
+            inputUser();
+            for (int x = 0; x < auswahlAktie.size(); x++) {
+                String tempAktie = auswahlAktie.get(x);
+                tempAktieSIM = tempAktie;
+                connectToMySql();
+                clear();
+                readURL(tempAktie);
+                selectToCheck(tempAktie);
+                createTable(tempAktie);
+                createTableClac(tempAktie);
+                getWert(URL);
+                writeDataInDB(tempAktie);
+                splitCorrection(tempAktie);
+                durchschnitt();
+                writeCorrectDataInDB(tempAktie);
+                getData(tempAktie);
 
-    public static boolean checkBuy200er(String tablename, LocalDate date) {
-        try {
-            return getAdjustedClose(tablename, date) > getAvg(tablename, date);
-        } catch (NullPointerException e) {
-            System.out.println("Wert ist null!");
-        }
-        return false;
-    }
+                Collections.reverse(adjustedSplit);
+                Collections.reverse(gleitenderDurchschnitt);
+                final CategoryAxis xAxis = new CategoryAxis();
+                final NumberAxis yAxis = new NumberAxis();
+                String newFolder = LocalDate.now().toString();
+                LineChart<String, Number> lineChart = new LineChart<String, Number>(xAxis, yAxis);
+                Scene scene = new Scene(lineChart, 1000, 600);
 
-    public static boolean checkSell3prozent(String tablename, LocalDate date){
-        try {
-            float temp = getAvg(tablename, date) * Float.parseFloat("0.97");
-            return getAdjustedClose(tablename, date) < temp;
-        }catch (NullPointerException e){
-            System.out.println("Wert ist null!");
-        }
-        return false;
-    }
-    public static boolean checkBuy3prozent(String tablename, LocalDate date){
-        try {
-            float temp = getAvg(tablename, date) * Float.parseFloat("1.03");
-            return getAdjustedClose(tablename, date) > temp;
-        }catch (NullPointerException e){
-            System.out.println("Wert ist null!");
-        }
-        return false;
-    }
+                xAxis.setLabel("Datum");
+                yAxis.setLabel("close-Wert");
+                lineChart.setTitle("Aktienkurs " + tempAktie);
+                XYChart.Series<String, Number> tatsaechlich = new XYChart.Series();
+                XYChart.Series<String, Number> durchschnitt = new XYChart.Series();
+                tatsaechlich.setName("Close-Werte " + kaufDatum);
+                durchschnitt.setName("gleitender Durchschnitt " + kaufDatum);
 
-    public static double getDepot(String tablename) {
-        try {
-            myStmt = connection.createStatement();
-            ResultSet rs = myStmt.executeQuery("SELECT depot FROM " + tablename + " ORDER BY datum DESC LIMIT 1");
-            if (rs.next()) {
-                return rs.getDouble("depot");
-            }
-        } catch (SQLException e) {
-            System.out.println("Methode getDepot: " + e.getMessage());
-        }
-        return 0;
-    }
 
-    public static void insertStrats(String tablename, LocalDate date, String ticker, int flag, int amount, double depot, float close) {
-        try {
-            myStmt = connection.createStatement();
-            String sql = "INSERT INTO " + tablename + " (datum,ticker,flag,amount,depot, close) VALUES ('" + date + "', '" + ticker + "', '" + flag + "', '" + amount + "', '" + depot + "', '" + close + "');";
-            myStmt.executeUpdate(sql);
-        } catch (SQLException e) {
-            System.out.println("Methode dbInsertStrats: " + e.getMessage());
-        }
-    }
-
-    public static int getAmount(String tablename) {
-        try {
-            myStmt = connection.createStatement();
-            ResultSet rs = myStmt.executeQuery("SELECT amount FROM " + tablename + " ORDER BY datum DESC LIMIT 1");
-            if (rs.next()) {
-                return rs.getInt("amount");
-            }
-        } catch (SQLException e) {
-            System.out.println("Methode getAmount: " + e.getMessage());
-        }
-        return 0;
-    }
-
-    public static void buy(int i, LocalDate d, String tablename) {
-        double depot = getDepot(tablename) % getAdjustedClose(a.auswahlAktie.get(i), d);
-        int amount = (int) Math.floor(getDepot(tablename) / getAdjustedClose(a.auswahlAktie.get(i), d));
-        insertStrats(tablename, d, a.auswahlAktie.get(i), 1, amount, depot, getAdjustedClose(a.auswahlAktie.get(i), d));
-    }
-
-    public static void sell(int i, LocalDate d, String tablename) {
-        double depot = getAdjustedClose(a.auswahlAktie.get(i), d) * getAmount(tablename) + getDepot(tablename);
-        insertStrats(tablename, d, a.auswahlAktie.get(i), 0, 0, depot, getAdjustedClose(a.auswahlAktie.get(i), d));
-    }
-
-    public static boolean checkSell200er(String tablename, LocalDate date) {
-        try {
-            return getAdjustedClose(tablename, date) < getAvg(tablename, date);
-        } catch (NullPointerException e) {
-            System.out.println("Wert ist null!");
-        }
-        return false;
-    }
-
-    public static Float getAvg(String tablename, LocalDate date) {
-        try {
-            myStmt = connection.createStatement();
-            ResultSet rs = myStmt.executeQuery("SELECT avg FROM " + tablename + "_calc WHERE datum = '" + date + "' ORDER BY datum ASC");
-            if (rs.next()) {
-                return rs.getFloat("avg");
-            }
-        } catch (SQLException e) {
-            System.out.println("Methode getAvg: " + e.getMessage());
-        }
-        return null;
-    }
-
-    public static boolean isDateValid(String tablename, LocalDate date) {
-        try {
-            if (getValidDate(tablename, date)) {
-                return true;
-            }
-        } catch (NullPointerException e) {
-            System.out.println("Wert ist null!");
-        }
-        return false;
-    }
-
-    public static boolean getValidDate(String tablename, LocalDate date) {
-        try {
-            myStmt = connection.createStatement();
-            ResultSet rs = myStmt.executeQuery("SELECT datum FROM " + tablename + "_calc WHERE datum = '" + date + "' ORDER BY datum ASC");
-            if (rs.next()) {
-                return true;
-            }
-        } catch (SQLException e) {
-            System.out.println("Methode getDate: " + e.getMessage());
-        }
-        return false;
-    }
-
-    public static void zweihundeter(int i, double startdepot) throws SQLException {
-        String tableName = a.auswahlAktie.get(i) + "_200er";
-        db(tableName, LocalDate.parse(a.kaufDatum), a.auswahlAktie.get(i), 0, 0, a.depot, 0);
-        for (LocalDate d = LocalDate.parse(a.kaufDatum); d.isBefore(LocalDate.now()); d = d.plusDays(1)) {
-            if (getDBDate(a.auswahlAktie.get(i), d)) {
-                //Sell or Buy
-                if (!getFlag(tableName)) {
-                    //BUY
-                    if (checkBuy200er(a.auswahlAktie.get(i), d)) {
-                        buy(i, d, tableName);
-                    }
-                } else if (getFlag(tableName)) {
-                    if (checkSell200er(a.auswahlAktie.get(i), d)) {
-                        sell(i, d, tableName);
+                for (int i = 0; i < dateDB.size() - 1; i++) {
+                    tatsaechlich.getData().add(new XYChart.Data(dateDB.get(i), adjustedSplit.get(i)));
+                }
+                for (int i = 0; i < gleitenderDurchschnitt.size() - 1; i++) {
+                    durchschnitt.getData().add(new XYChart.Data(dateDB.get(i), gleitenderDurchschnitt.get(i)));
+                }
+                lineChart.getData().add(tatsaechlich);
+                lineChart.getData().add(durchschnitt);
+                yAxis.setAutoRanging(false);
+                double verschiebenOben = Collections.max(adjustedSplit);
+                double verschiebenUnten = Collections.min(adjustedSplit);
+                yAxis.setLowerBound(verschiebenUnten - 20);
+                yAxis.setUpperBound(verschiebenOben + 20);
+                tatsaechlich.getNode().setStyle("-fx-stroke: #000000; ");
+                durchschnitt.getNode().setStyle("-fx-stroke: #ffffff; ");
+                lineChart.setCreateSymbols(false);
+                if (adjustedSplit.size() > 0 && gleitenderDurchschnitt.size() > 0) {
+                    if (adjustedSplit.get(adjustedSplit.size() - 1) > gleitenderDurchschnitt.get(gleitenderDurchschnitt.size() - 1)) {
+                        scene.getStylesheets().add("backgroundGreen.css");
+                    } else {
+                        scene.getStylesheets().add("backgroundRed.css");
                     }
                 }
+                primaryStage.setScene(scene);
+                WritableImage image = scene.snapshot(null);
+
+                File directoryImage = new File(verzeichnis + File.separator + "Image");
+                directoryImage.mkdir();
+                File directory = new File(verzeichnis + "Image\\" + File.separator + newFolder);
+                directory.mkdir();
+                File file = new File(verzeichnis + "Image\\" + newFolder + "\\" + tempAktie + " " + LocalDate.now().minusDays(1) + ".png"); //Pfad einfügen
+                ImageIO.write(SwingFXUtils.fromFXImage(image, null), "PNG", file);
+                System.out.println("Image Saved " + tempAktie);
+                Thread.sleep(500);
             }
-        }
-        if (getFlag(tableName)) {
-            LocalDate d = LocalDate.now();
-            while (!isDateValid(a.auswahlAktie.get(i), d)) {
-                d = d.minusDays(1);
-            }
-            sell(i, d, tableName);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
-
-
-    public static void dreiProzent(int i, double startdepot) throws SQLException {
-        String tableName = a.auswahlAktie.get(i)+"_3prozent";
-        db(tableName, LocalDate.parse(a.kaufDatum), a.auswahlAktie.get(i), 0, 0, a.depot, 0);
-        for(LocalDate d = LocalDate.parse(a.kaufDatum); d.isBefore(LocalDate.now()); d=d.plusDays(1)){
-            //Überprüfen ob Feiertag,etc
-            if(isDateValid(a.auswahlAktie.get(i), d)){
-                //Sell or Buy
-                if(!getFlag(tableName)){
-                    //BUY
-                    if(checkBuy3prozent(a.auswahlAktie.get(i), d)){
-                        buy(i, d,tableName);
-                    }
-                }
-                else if(getFlag(tableName)){
-                    if (checkSell3prozent(a.auswahlAktie.get(i), d)){
-                        sell(i,d,tableName);
-                    }
-                }
-            }
-        }
-        if(getFlag(tableName)){
-            LocalDate d = LocalDate.now();
-            while (!isDateValid(a.auswahlAktie.get(i),d)){
-                d = d.minusDays(1);
-            }
-            sell(i,d,tableName);
-        }
-    }
-
-    public static void buyAndHold(int i, double startdepot) throws SQLException {
-        String tableName = a.auswahlAktie.get(i)+"_BuyAndHold";
-        db(tableName, LocalDate.parse(a.kaufDatum), a.auswahlAktie.get(i), 0, 0, a.depot, 0);
-
-        LocalDate d = LocalDate.parse(a.kaufDatum);
-        while(!isDateValid(a.auswahlAktie.get(i),d)){
-            d = d.plusDays(1);
-        }
-        buy(i,d,tableName);
-        d = LocalDate.now();
-        while (!isDateValid(a.auswahlAktie.get(i),d)){
-            d = d.minusDays(1);
-        }
-        sell(i,d,tableName);
-    }
-
-    public static void vergleich(int i, double startDepot){
-        String tablename = a.auswahlAktie.get(i)+"_200er";
-        double depotS1 = getDepot(tablename);
-        tablename = a.auswahlAktie.get(i)+"_3prozent";
-        double depotS2 = getDepot(tablename);
-        tablename = a.auswahlAktie.get(i)+"_BuyAndHold";
-        double depotS3 = getDepot(tablename);
-
-        System.out.println(a.auswahlAktie.get(i));
-        System.out.println("Startkapital: " + String.format("%.2f",startDepot));
-        System.out.println("200er: " + String.format("%.2f",depotS1) + "$   %-Veränderung: " + String.format("%.2f",((depotS1-startDepot)/startDepot)*100) + "%");
-        System.out.println("200er + 3%: " + String.format("%.2f",depotS2) + "$   %-Veränderung: " + String.format("%.2f",((depotS2-startDepot)/startDepot)*100) + "%");
-        System.out.println("Buy-and-Hold: " + String.format("%.2f",depotS3) + "$   %-Veränderung: " + String.format("%.2f",((depotS3-startDepot)/startDepot)*100) + "%");
-        System.out.println(" ");
-
-    }
-
-
-
-
 }
