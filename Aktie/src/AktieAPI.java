@@ -35,9 +35,9 @@ public class AktieAPISQL extends Application {
     public static ArrayList<Double> adjustedSplit = new ArrayList<>();
     public static ArrayList<String> auswahlAktie = new ArrayList<>();
     public static ArrayList<Double> adjustedCoefficient = new ArrayList<>();
-    public static String URL, type, key, verzeichnis, aktienDB, kaufDatum, tempAktieSIM;
+    public static String URL, type, key, verzeichnis, aktienDB, kaufDatum;
     public static int avgauswahl;
-    public static double depot, verkaufswertEnde = 0;
+    public static double depot;
 
     public static void main(String args[]) throws IOException, SQLException {
         Application.launch(args);
@@ -67,16 +67,14 @@ public class AktieAPISQL extends Application {
     static boolean connectToMySql() throws SQLException {
         try {
             String DBurl = "jdbc:mysql://localhost:3306/" + aktienDB + "?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
-
             connection = DriverManager.getConnection(DBurl, "root", "NicerSpeck#");
             myStmt = connection.createStatement();
-          //  System.out.println("Datenbank verknüpft");
+            //  System.out.println("Datenbank verknüpft");
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return false;
-
     }
     static void readURL(String tempAktie) throws Exception {
         try {
@@ -90,15 +88,19 @@ public class AktieAPISQL extends Application {
             myStmt = connection.createStatement();
             String querry = "select * from " + tempAktie + ";";
             ResultSet rs = myStmt.executeQuery(querry);
-           // System.out.println("Es ist ein Table verfügbar");
+            // System.out.println("Es ist ein Table verfügbar");
         } catch (SQLException e) {
-           // System.out.println("Es wurde noch kein Table angelegt");
+            // System.out.println("Es wurde noch kein Table angelegt");
         }
     }
     static boolean createTable(String tempAktie) throws SQLException {
         try {
             myStmt = connection.createStatement();
+            String createdb = "create database if not exists aktiendb;";
+            String usedb = "use aktiendb;";
             String createtable = "create table if not exists " + tempAktie + "_Roh (datum varchar(255) primary key, close double, split double);";
+            myStmt.executeUpdate(createdb);
+            myStmt.executeUpdate(usedb);
             myStmt.executeUpdate(createtable);
             return true;
         } catch (SQLException e) {
@@ -110,8 +112,8 @@ public class AktieAPISQL extends Application {
         try {
             myStmt = connection.createStatement();
             String createtable = "create table if not exists " + tempAktie + "_Calc (datum varchar(255) primary key, closeCorrect double, avg double);";
-           // String showtable = "show tables;";
-          //  System.out.println(myStmt.executeUpdate(showtable));
+            // String showtable = "show tables;";
+            //  System.out.println(myStmt.executeUpdate(showtable));
             myStmt.executeUpdate(createtable);
             return true;
         } catch (SQLException e) {
@@ -135,12 +137,6 @@ public class AktieAPISQL extends Application {
         adjustedSplit.clear();
         dateDB.clear();
         gleitenderDurchschnitt.clear();
-        s.buySellList.clear();
-        s.buySellWert.clear();
-        s.dreiProzentWert.clear();
-        s.dreiProzentList.clear();
-        s.buyAndHold.clear();
-        s.dates.clear();
     }
     static void writeDataInDB(String tempAktie) {
         try {
@@ -148,7 +144,7 @@ public class AktieAPISQL extends Application {
                 String writeData = "insert ignore into " + tempAktie + "_Roh (datum, close, split) values('" + daten.get(i) + "', '" + closeWerte.get(i) + "', '" + adjustedCoefficient.get(i) + "');";
                 myStmt.executeUpdate(writeData);
             }
-           //System.out.println("Rohdaten eingetragen");
+            //System.out.println("Rohdaten eingetragen");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -226,7 +222,7 @@ public class AktieAPISQL extends Application {
 
     }
     @Override
-    public void start(Stage primaryStage) throws SQLException, IOException {
+    public void start(Stage primaryStage) throws SQLException, IOException, InterruptedException {
         try {
             inputUser();
             for (int x = 0; x < auswahlAktie.size(); x++) {
@@ -241,17 +237,8 @@ public class AktieAPISQL extends Application {
                 writeDataInDB(tempAktie);
                 splitCorrection(tempAktie);
                 durchschnitt();
-                tempAktieSIM = tempAktie;
-                s.getDataFormCalc();
-                s.createTableSIM(tempAktieSIM);
-                s.buySell();
-                s.dreiProzent();
-                s.buyAndHold();
-                s.writeSIMDataInDB();
-                s.output();
                 writeCorrectDataInDB(tempAktie);
                 getData(tempAktie);
-
                 Collections.reverse(adjustedSplit);
                 Collections.reverse(gleitenderDurchschnitt);
                 final CategoryAxis xAxis = new CategoryAxis();
@@ -301,7 +288,8 @@ public class AktieAPISQL extends Application {
                 directory.mkdir();
                 File file = new File(verzeichnis + "Image\\" + newFolder + "\\" + tempAktie + " " + LocalDate.now().minusDays(1) + ".png"); //Pfad einfügen
                 ImageIO.write(SwingFXUtils.fromFXImage(image, null), "PNG", file);
-                //System.out.println("Image Saved " + tempAktie);
+                System.out.println("Image Saved " + tempAktie);
+                Thread.sleep(800);
             }
         } catch (Exception e) {
             e.printStackTrace();
