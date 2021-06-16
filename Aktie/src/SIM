@@ -1,10 +1,16 @@
+import com.sun.webkit.LoadListenerClient;
+
 import java.io.IOException;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class SIM extends AktieAPISQL {
+    static Scanner reader = new Scanner(System.in);
     public static AktieAPISQL a = new AktieAPISQL();
     public static ArrayList<String> dates = new ArrayList<>();
     public static ArrayList<Double> close = new ArrayList<>();
@@ -14,11 +20,11 @@ public class SIM extends AktieAPISQL {
     public static ArrayList<Double> dreiProzentWert = new ArrayList<>();
     public static ArrayList<String> dreiProzentList = new ArrayList<>();
     public static ArrayList<Double> buyAndHold = new ArrayList<>();
-    public static double verkaufswertEnde = 0, rest,  zweihunderter = 0, dreiProzent = 0, xBuyAndHold = 0, depotAufgeteilt;
+    public static double rest,  zweihunderter = 0, dreiProzent = 0, xBuyAndHold = 0, depotAufgeteilt, depot;
+    static LocalDate kaufDatum;
 
     //gewinn-verlust-kurve
     //1 Depot auf mehrere Aktien aufteilen
-
 
     public static boolean db() {
         try {
@@ -250,6 +256,7 @@ public class SIM extends AktieAPISQL {
         System.out.println("Buy and Hold: " + Math.round((xBuyAndHold * 100) / 100) + "   prozentuale Veränderung " + Math.round(((xBuyAndHold / depotAufgeteilt) * 10000)/100)+"%");
         System.out.println(" ");
     }
+
     public static void clear() {
         dates.clear();
         close.clear();
@@ -263,9 +270,37 @@ public class SIM extends AktieAPISQL {
         dreiProzent = 0;
         xBuyAndHold = 0;
     }
+    public static void inputData() {
+        String temp = "";
+        String x = "1999-01-01";
+        System.out.println("Kaufdatum [JJJJ-MM-DD]: ");
+        temp = reader.next();
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("[yyyy,M,d][yyyy.M.d][yyyy-M-d][d/M/yyyy]");
+        LocalDate firstDate = LocalDate.parse(temp, dtf);
+        kaufDatum = LocalDate.parse(firstDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
+        System.out.println(kaufDatum);
+        if (kaufDatum.isBefore(LocalDate.parse(x))) {
+            System.out.println("Falsches Datum (zu klein)");
+            inputData();
+        }
+        if (kaufDatum.isAfter(LocalDate.now())) {
+            System.out.println("Falsches Datum (nach Heute)");
+            inputData();
+        }
+        System.out.println("Depot: ");
+        depot = reader.nextDouble();
+        if (depot < 0.01) {
+            System.out.println("Depot zu klein");
+            inputData();
+        }
+    }
+
+
     public static void main(String[] args) throws SQLException, IOException {
-        a.inputUser();
-        depotAufgeteilt = a.depot/a.auswahlAktie.size();
+        inputData();
+        a.inputUserTXT();
+        depotAufgeteilt = depot/a.auswahlAktie.size();
+        System.out.println(depotAufgeteilt);
         for (int i = 0; i < a.auswahlAktie.size(); i++) {
             db();
             getDataFormCalc(a.auswahlAktie.get(i));
@@ -274,7 +309,6 @@ public class SIM extends AktieAPISQL {
             dreiProzent();
             buyAndHold();
             writeSIMDataInDB(a.auswahlAktie.get(i));
-
             output(a.auswahlAktie.get(i));
             clear();
         }
