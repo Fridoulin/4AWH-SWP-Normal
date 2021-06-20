@@ -35,15 +35,13 @@ public class AktieAPISQL extends Application {
     public static ArrayList<Double> adjustedSplit = new ArrayList<>();
     public static ArrayList<String> auswahlAktie = new ArrayList<>();
     public static ArrayList<Double> adjustedCoefficient = new ArrayList<>();
-    public static String URL, type, key, verzeichnis, aktienDB, kaufDatum;
+    public static String URL, type, key, verzeichnis, aktienDB;
     public static int avgauswahl;
-    public static double depot;
-
     public static void main(String args[]) throws IOException, SQLException {
         Application.launch(args);
     }
 
-    public void inputUser() throws IOException {
+    public void inputUserTXT() throws IOException {
         try {
             File file = new File("C:\\Users\\nisch\\IdeaProjects\\AktieAPISQL\\src\\aktien.txt"); //Pfad
             BufferedReader br = new BufferedReader(new FileReader(file));
@@ -51,8 +49,6 @@ public class AktieAPISQL extends Application {
             key = br.readLine();
             verzeichnis = br.readLine();
             aktienDB = br.readLine();
-            kaufDatum = br.readLine();
-            depot = Integer.parseInt(br.readLine());
             avgauswahl = Integer.parseInt(br.readLine());
             while ((st = br.readLine()) != null)
                 if (st.equals("compact") || st.equals("full")) {
@@ -69,7 +65,6 @@ public class AktieAPISQL extends Application {
             String DBurl = "jdbc:mysql://localhost:3306/" + aktienDB + "?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
             connection = DriverManager.getConnection(DBurl, "root", "NicerSpeck#");
             myStmt = connection.createStatement();
-            //  System.out.println("Datenbank verknüpft");
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -80,7 +75,6 @@ public class AktieAPISQL extends Application {
         try {
             URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=" + tempAktie + "&outputsize=" + type + "&apikey=" + key;
         } catch (Exception e) {
-            //System.out.println("Keine Internetverbingung");
         }
     }
     static void selectToCheck(String tempAktie) {
@@ -88,9 +82,7 @@ public class AktieAPISQL extends Application {
             myStmt = connection.createStatement();
             String querry = "select * from " + tempAktie + ";";
             ResultSet rs = myStmt.executeQuery(querry);
-            // System.out.println("Es ist ein Table verfügbar");
         } catch (SQLException e) {
-            // System.out.println("Es wurde noch kein Table angelegt");
         }
     }
     static boolean createTable(String tempAktie) throws SQLException {
@@ -112,8 +104,6 @@ public class AktieAPISQL extends Application {
         try {
             myStmt = connection.createStatement();
             String createtable = "create table if not exists " + tempAktie + "_Calc (datum varchar(255) primary key, closeCorrect double, avg double);";
-            // String showtable = "show tables;";
-            //  System.out.println(myStmt.executeUpdate(showtable));
             myStmt.executeUpdate(createtable);
             return true;
         } catch (SQLException e) {
@@ -180,6 +170,7 @@ public class AktieAPISQL extends Application {
     static void durchschnitt() {
         int count = 0;
         double wert = 0, x, avg;
+        Collections.reverse(adjustedSplit);
         for (int i = 0; i <= adjustedSplit.size() - 1; i++) {
             count++;
             if (count <= avgauswahl) {
@@ -199,6 +190,9 @@ public class AktieAPISQL extends Application {
     static void writeCorrectDataInDB(String tempAktie) {
         try {
             for (int i = 0; i < daten.size(); i++) {
+                daten.sort(null);
+                System.out.println(daten.get(i) +" " + adjustedSplit.get(i)+"  "+ gleitenderDurchschnitt.get(i));
+
                 String writeData = "insert ignore into " + tempAktie + "_Calc (datum, closeCorrect, avg) values('" + daten.get(i) + "', '" + adjustedSplit.get(i) + "', '" + gleitenderDurchschnitt.get(i) + "');";
                 myStmt.executeUpdate(writeData);
 
@@ -209,9 +203,8 @@ public class AktieAPISQL extends Application {
         }
     }
     public static void getData(String tempAktie) {
-        //Datenbank für javafx
         try {
-            ResultSet rsNormal = myStmt.executeQuery("SELECT * from " + tempAktie + "_Calc");
+            ResultSet rsNormal = myStmt.executeQuery("SELECT * from " + tempAktie + "_Calc order by datum desc");
             while (rsNormal.next()) {
 
                 dateDB.add(rsNormal.getString("datum"));
@@ -224,7 +217,7 @@ public class AktieAPISQL extends Application {
     @Override
     public void start(Stage primaryStage) throws SQLException, IOException, InterruptedException {
         try {
-            inputUser();
+            inputUserTXT();
             for (int x = 0; x < auswahlAktie.size(); x++) {
                 String tempAktie = auswahlAktie.get(x);
                 connectToMySql();
@@ -252,8 +245,8 @@ public class AktieAPISQL extends Application {
                 lineChart.setTitle("Aktienkurs " + tempAktie);
                 XYChart.Series<String, Number> tatsaechlich = new XYChart.Series();
                 XYChart.Series<String, Number> durchschnitt = new XYChart.Series();
-                tatsaechlich.setName("Close-Werte " + kaufDatum);
-                durchschnitt.setName("gleitender Durchschnitt " + kaufDatum);
+                tatsaechlich.setName("Close-Werte " + LocalDate.now());
+                durchschnitt.setName("gleitender Durchschnitt " + LocalDate.now());
 
 
                 for (int i = 0; i < dateDB.size() - 1; i++) {
