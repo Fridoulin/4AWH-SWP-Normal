@@ -37,6 +37,7 @@ public class AktieAPISQL extends Application {
     public static ArrayList<Double> adjustedCoefficient = new ArrayList<>();
     public static String URL, type, key, verzeichnis, aktienDB;
     public static int avgauswahl;
+
     public static void main(String args[]) throws IOException, SQLException {
         Application.launch(args);
     }
@@ -60,6 +61,7 @@ public class AktieAPISQL extends Application {
             e.printStackTrace();
         }
     }
+
     static boolean connectToMySql() throws SQLException {
         try {
             String DBurl = "jdbc:mysql://localhost:3306/" + aktienDB + "?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
@@ -71,12 +73,14 @@ public class AktieAPISQL extends Application {
         }
         return false;
     }
+
     static void readURL(String tempAktie) throws Exception {
         try {
             URL = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=" + tempAktie + "&outputsize=" + type + "&apikey=" + key;
         } catch (Exception e) {
         }
     }
+
     static void selectToCheck(String tempAktie) {
         try {
             myStmt = connection.createStatement();
@@ -85,6 +89,7 @@ public class AktieAPISQL extends Application {
         } catch (SQLException e) {
         }
     }
+
     static boolean createTable(String tempAktie) throws SQLException {
         try {
             myStmt = connection.createStatement();
@@ -100,6 +105,7 @@ public class AktieAPISQL extends Application {
         }
         return false;
     }
+
     static boolean createTableClac(String tempAktie) throws SQLException {
         try {
             myStmt = connection.createStatement();
@@ -111,6 +117,7 @@ public class AktieAPISQL extends Application {
         }
         return false;
     }
+
     static void getWert(String URL) throws JSONException, IOException {
         JSONObject json = new JSONObject(IOUtils.toString(new URL(URL), Charset.forName("UTF-8")));
         json = json.getJSONObject("Time Series (Daily)");
@@ -120,6 +127,7 @@ public class AktieAPISQL extends Application {
             adjustedCoefficient.add(json.getJSONObject(LocalDate.parse((CharSequence) json.names().get(i)).toString()).getDouble("8. split coefficient"));
         }
     }
+
     static void clear() {
         daten.clear();
         closeWerte.clear();
@@ -128,6 +136,7 @@ public class AktieAPISQL extends Application {
         dateDB.clear();
         gleitenderDurchschnitt.clear();
     }
+
     static void writeDataInDB(String tempAktie) {
         try {
             for (int i = 0; i < daten.size(); i++) {
@@ -139,6 +148,7 @@ public class AktieAPISQL extends Application {
             e.printStackTrace();
         }
     }
+
     static void splitCorrection(String tempAktie) {
         ArrayList<Double> coe = new ArrayList<>();
         ArrayList<Double> close = new ArrayList<>();
@@ -167,6 +177,7 @@ public class AktieAPISQL extends Application {
         close.clear();
 
     }
+
     static void durchschnitt() {
         int count = 0;
         double wert = 0, x, avg;
@@ -187,12 +198,11 @@ public class AktieAPISQL extends Application {
             }
         }
     }
+
     static void writeCorrectDataInDB(String tempAktie) {
         try {
             for (int i = 0; i < daten.size(); i++) {
                 daten.sort(null);
-                System.out.println(daten.get(i) +" " + adjustedSplit.get(i)+"  "+ gleitenderDurchschnitt.get(i));
-
                 String writeData = "insert ignore into " + tempAktie + "_Calc (datum, closeCorrect, avg) values('" + daten.get(i) + "', '" + adjustedSplit.get(i) + "', '" + gleitenderDurchschnitt.get(i) + "');";
                 myStmt.executeUpdate(writeData);
 
@@ -202,6 +212,7 @@ public class AktieAPISQL extends Application {
             e.printStackTrace();
         }
     }
+
     public static void getData(String tempAktie) {
         try {
             ResultSet rsNormal = myStmt.executeQuery("SELECT * from " + tempAktie + "_Calc order by datum desc");
@@ -214,6 +225,7 @@ public class AktieAPISQL extends Application {
         }
 
     }
+
     @Override
     public void start(Stage primaryStage) throws SQLException, IOException, InterruptedException {
         try {
@@ -232,8 +244,6 @@ public class AktieAPISQL extends Application {
                 durchschnitt();
                 writeCorrectDataInDB(tempAktie);
                 getData(tempAktie);
-                Collections.reverse(adjustedSplit);
-                Collections.reverse(gleitenderDurchschnitt);
                 final CategoryAxis xAxis = new CategoryAxis();
                 final NumberAxis yAxis = new NumberAxis();
                 String newFolder = LocalDate.now().toString();
@@ -259,8 +269,6 @@ public class AktieAPISQL extends Application {
                 lineChart.getData().add(durchschnitt);
                 yAxis.setAutoRanging(false);
                 double verschiebenOben = Collections.max(adjustedSplit);
-                double verschiebenUnten = Collections.min(adjustedSplit);
-                yAxis.setLowerBound(verschiebenUnten - 20);
                 yAxis.setUpperBound(verschiebenOben + 20);
                 tatsaechlich.getNode().setStyle("-fx-stroke: #000000; ");
                 durchschnitt.getNode().setStyle("-fx-stroke: #ffffff; ");
