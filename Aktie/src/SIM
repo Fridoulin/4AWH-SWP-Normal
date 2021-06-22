@@ -1,11 +1,5 @@
-import com.sun.webkit.LoadListenerClient;
 import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.chart.CategoryAxis;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
-import javafx.stage.Stage;
+import org.w3c.dom.ls.LSOutput;
 
 import java.io.IOException;
 import java.sql.*;
@@ -13,25 +7,65 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.function.DoubleToIntFunction;
 
-public class SIM extends Application {
-    static Scanner reader = new Scanner(System.in);
+public class SIM {
     public static AktieAPISQL a = new AktieAPISQL();
+    static Connection connection = a.connection;
+    static Statement myStmt = a.myStmt;
+    static LocalDate kaufDatum;
+    static double depot, depotAufgeteilt, bAHEndwert;
     public static ArrayList<String> dates = new ArrayList<>();
     public static ArrayList<Double> close = new ArrayList<>();
     public static ArrayList<Double> avg = new ArrayList<>();
-    public static ArrayList<Double> buySellWert = new ArrayList<>();
-    public static ArrayList<String> buySellList = new ArrayList<>();
-    public static ArrayList<Double> dreiProzentWert = new ArrayList<>();
-    public static ArrayList<String> dreiProzentList = new ArrayList<>();
-    public static ArrayList<Double> buyAndHold = new ArrayList<>();
-    public static double rest,  zweihunderter = 0, dreiProzent = 0, xBuyAndHold = 0, depotAufgeteilt, depot;
-    static LocalDate kaufDatum;
-    static Connection connection = a.connection;
-    static Statement myStmt = a.myStmt;
+    public static ArrayList<Double> zweihunderter = new ArrayList<>();
+    public static ArrayList<String> zweihunderterBuySell = new ArrayList<>();
+    public static ArrayList<String> zweihunderterDates = new ArrayList<>();
+    public static ArrayList<Double> dreiProzent = new ArrayList<>();
+    public static ArrayList<String> dreiProzentBuySell = new ArrayList<>();
+    public static ArrayList<String> dreiProzentDates = new ArrayList<>();
 
-    //gewinn-verlust-kurve
-    //1 Depot auf mehrere Aktien aufteilen
+
+    public static void main(String[] args) throws SQLException, IOException {
+        inputData();
+        a.inputUserTXT();
+        db();
+        depotAufgeteilt = depot / a.auswahlAktie.size();
+        for (int i = 0; i < a.auswahlAktie.size(); i++) {
+            getDataFormCalc(a.auswahlAktie.get(i));
+            createTableSIM(a.auswahlAktie.get(i));
+            zweihunderter(a.auswahlAktie.get(i));
+            dreiProzent(a.auswahlAktie.get(i));
+            buyAndHold(a.auswahlAktie.get(i));
+        }
+        output();
+
+    }
+
+    public static void inputData() {
+        Scanner reader = new Scanner(System.in);
+        String temp = "";
+        String x = "1999-01-01";
+        System.out.println("Kaufdatum [JJJJ-MM-DD]: ");
+        temp = reader.next();
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("[yyyy,M,d][yyyy.M.d][yyyy-M-d][d/M/yyyy]");
+        LocalDate firstDate = LocalDate.parse(temp, dtf);
+        kaufDatum = LocalDate.parse(firstDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
+        if (kaufDatum.isBefore(LocalDate.parse(x))) {
+            System.out.println("Falsches Datum (zu klein)");
+            inputData();
+        }
+        if (kaufDatum.isAfter(LocalDate.now())) {
+            System.out.println("Falsches Datum (nach Heute)");
+            inputData();
+        }
+        System.out.println("Depot: ");
+        depot = reader.nextDouble();
+        if (depot < 0.01) {
+            System.out.println("Depot zu klein");
+            inputData();
+        }
+    }
 
     public static boolean db() {
         try {
@@ -65,9 +99,14 @@ public class SIM extends Application {
         try {
             myStmt = connection.createStatement();
             String droptable = "drop table if exists " + tempAktie;
-            String createtable = "create table if not exists " + tempAktie + "_SIM (datum varchar(255) primary  key, buySell varchar(255) , buySellWerte double, dreiProzent varchar(255) , dreiProzentWerte double, buyAndHold double);";
+            String createtable200er = "create table if not exists " + tempAktie + "_200er (datum varchar(255) primary  key, flag varchar(255), Money double);";
+            String createtable3Pro = "create table if not exists " + tempAktie + "_3Pro (datum varchar(255) primary  key, flag varchar(255), Money double);";
+            String createtableBaH = "create table if not exists " + tempAktie + "_BaH (kaufdatum varchar(255) primary  key, verkaufsdatum varchar(255), depot double, Money double, anteile double);";
             myStmt.executeUpdate(droptable);
-            myStmt.executeUpdate(createtable);
+            myStmt.executeUpdate(createtable200er);
+            myStmt.executeUpdate(createtable3Pro);
+            myStmt.executeUpdate(createtableBaH);
+
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -75,285 +114,147 @@ public class SIM extends Application {
         return false;
     }
 
-    public static void buySell() {
-        double tempBuy = 0, tempSell = 0;
-        int c = 0;
-        boolean buy = true, sell = false, durchlauf = true;
+    public static void zweihunderter(String tempAktie) {
+        double temp, rest = 0, anteile = 0, tempSell = 0, depotzw = depotAufgeteilt;
+        boolean buy = true;
         for (int i = 0; i < dates.size(); i++) {
-            if (close.get(i) > avg.get(i) && buy && durchlauf) {
-                buySellList.add("buy");
-                buy = false;
-                sell = true;
-                durchlauf = false;
-            }
-            if (close.get(i) < avg.get(i) && sell && durchlauf) {
-                buySellList.add("sell");
-                buy = true;
-                sell = false;
-                durchlauf = false;
-            }
-            if (durchlauf) {
-                buySellList.add("x");
-                durchlauf = false;
-            }
-            durchlauf = true;
-        }
-        buySellCalc();
-    }
-
-    public static void buySellCalc() {
-        double temp, temp2 = 0, tempSell, coefficient;
-        int anteile = 0;
-        boolean durchlauf = true;
-        for (int i = 0; i < dates.size(); i++) {
-            if (buySellList.get(i).equals("buy") && durchlauf) {
-                System.out.println("x"+dates.get(i));
-                temp = (depotAufgeteilt / close.get(i));
-                rest = 0;
+            if (avg.get(i) < close.get(i) && buy) {
+                temp = (depotzw / close.get(i));
                 rest = temp;
                 anteile = (int) temp;
-                rest = rest - anteile;
-                durchlauf = false;
-                buySellWert.add(0.0);
-            }
-            if (buySellList.get(i).equals("sell") && durchlauf) {
-                tempSell = ((anteile * close.get(i)) - depotAufgeteilt)/10;
-                buySellWert.add(tempSell);
-                durchlauf = false;
-            }
-            if (durchlauf) {
-                buySellWert.add(0.0);
-            }
-            durchlauf = true;
-        }
-        temp2 = buySellWert.get(buySellWert.size() - 1);
-        buySellWert.remove(buySellWert.get(buySellWert.size() - 1));
-        buySellWert.add(temp2 + (rest * close.get(close.size() - 1)));
-    }
-
-    public static void dreiProzent() {
-        double tempBuy = 0, tempSell = 0;
-        int c = 0;
-        boolean buy = true, sell = false, durchlauf = true;
-        for (int i = 0; i < dates.size(); i++) {
-            tempBuy = close.get(i) * 1.03;
-            if (tempBuy > avg.get(i) && buy && durchlauf) {
-                dreiProzentList.add("buy");
+                rest = (rest - anteile) * close.get(i);
                 buy = false;
-                sell = true;
-                durchlauf = false;
+                zweihunderterBuySell.add("buy");
+                zweihunderterDates.add(dates.get(i));
+                zweihunderter.add(0.0);
             }
-            tempSell = close.get(i) * 0.97;
-            if (tempSell < avg.get(i) && sell && durchlauf) {
-                dreiProzentList.add("sell");
+            if (avg.get(i) > close.get(i) && !buy) {
+                tempSell = ((anteile * close.get(i)) + rest);
                 buy = true;
-                sell = false;
-                durchlauf = false;
+                zweihunderterBuySell.add("sell");
+                zweihunderter.add(tempSell);
+                zweihunderterDates.add(dates.get(i));
+                depotzw = tempSell;
+                anteile = 0;
             }
-            if (durchlauf) {
-                dreiProzentList.add("x");
-                durchlauf = false;
-            }
-            durchlauf = true;
         }
-        dreiProzentCalc();
-    }
-
-    public static void dreiProzentCalc() {
-        double temp, temp2 = 0, tempSell, coefficient;
-        int anteile = 0;
-        boolean durchlauf = true;
-        for (int i = 0; i < dates.size(); i++) {
-            if (dreiProzentList.get(i).equals("buy") && durchlauf) {
-                temp = (depotAufgeteilt / close.get(i));
-                rest = 0;
-                rest = temp;
-                anteile = (int) temp;
-                rest = rest - anteile;
-                durchlauf = false;
-                dreiProzentWert.add(0.0);
-            }
-            if (dreiProzentList.get(i).equals("sell") && durchlauf) {
-                tempSell = ((anteile * close.get(i)) - depotAufgeteilt)/10;
-                dreiProzentWert.add(tempSell);
-                durchlauf = false;
-            }
-            if (durchlauf) {
-                dreiProzentWert.add(0.0);
-            }
-            durchlauf = true;
+        if (zweihunderterBuySell.get(zweihunderterBuySell.size() - 1) == "buy") {
+            tempSell = ((anteile * close.get(close.size() - 1)) + rest);
+            buy = true;
+            zweihunderterBuySell.add("sell");
+            zweihunderter.add(tempSell);
+            depotzw = tempSell;
+            anteile = 0;
         }
-        temp2 = dreiProzentWert.get(dreiProzentWert.size() - 1);
-        dreiProzentWert.remove(dreiProzentWert.get(dreiProzentWert.size() - 1));
-        dreiProzentWert.add(temp2 + (rest * close.get(close.size() - 1)));
-    }
-
-    public static void buyAndHold() {
-        double temp, temp2;
-        int anteile = 0;
-        boolean durchlauf = true, verkauf = false;
-        String verkaufsDatum;
-        for (int i = 0; i < dates.size(); i++) {
-            if (dates.get(0) == dates.get(i) && durchlauf) {
-                temp = (depotAufgeteilt / close.get(i));
-                anteile = (int) temp;
-                durchlauf = false;
-                buyAndHold.add(0.0);
-            }
-
-            verkaufsDatum = dates.get(dates.size() - 1);
-            if (verkaufsDatum == dates.get(i) && durchlauf) {
-                temp2 = anteile * close.get(i) - depotAufgeteilt * -1;
-                buyAndHold.add(temp2);
-                durchlauf = false;
-                verkauf = true;
-            }
-            if (durchlauf) {
-                buyAndHold.add(0.0);
-                durchlauf = false;
-            }
-            durchlauf = true;
-        }
-    }
-
-    public static void writeSIMDataInDB(String tempAktie) {
         try {
-            for (int i = 0; i < dates.size(); i++) {
-                String writeData = "insert ignore into " + tempAktie + "_SIM (datum, buySell, buySellWerte, dreiProzent, dreiProzentWerte, buyAndHold) values('" + dates.get(i) + "', '" + buySellList.get(i) + "', '" + buySellWert.get(i) + "', '" + dreiProzentList.get(i) + "', '" + dreiProzentWert.get(i) + "', '" + buyAndHold.get(i) + "');";
+            for (int i = 0; i < zweihunderterDates.size(); i++) {
+                String writeData = "insert ignore into " + tempAktie + "_200er (datum, flag, Money) values('" + zweihunderterDates.get(i) + "', '" + zweihunderterBuySell.get(i) + "', '" + zweihunderter.get(i) + "');";
                 myStmt.executeUpdate(writeData);
             }
-            // System.out.println("Datensatz eingetragen");
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    public static void outputCalc(){
-
-        if(zweihunderter < 0){
-            zweihunderter = zweihunderter *(-1);
-        }
-        if(dreiProzent < 0){
-            dreiProzent = dreiProzent *(-1);
-        }
-        if(xBuyAndHold < 0){
-            xBuyAndHold = xBuyAndHold *(-1);
-        }
-        if(zweihunderter < depotAufgeteilt){
-            zweihunderter = zweihunderter*10;
-        }
-        if(dreiProzent < depotAufgeteilt){
-            dreiProzent = dreiProzent*10;
-        }
-        if(xBuyAndHold < depotAufgeteilt){
-            xBuyAndHold = xBuyAndHold*10;
-        }
-
-    }
-
-    public static void output(String tempAktie) {
+    public static void dreiProzent(String tempAktie) {
+        double temp, rest = 0, anteile = 0, tempSell = 0, depotzw = depotAufgeteilt;
+        boolean buy = true, durchlauf = true;
         for (int i = 0; i < dates.size(); i++) {
-            zweihunderter += buySellWert.get(i);
-            dreiProzent += dreiProzentWert.get(i);
-            xBuyAndHold += buyAndHold.get(i);
+            if (avg.get(i) < close.get(i) * 1.03 && buy && durchlauf) {
+                temp = (depotzw / close.get(i));
+                rest = temp;
+                anteile = (int) temp;
+                rest = (rest - anteile) * close.get(i);
+                buy = false;
+                durchlauf = false;
+                dreiProzentBuySell.add("buy");
+                dreiProzentDates.add(dates.get(i));
+                dreiProzent.add(0.0);
+            }
+            if (avg.get(i) > close.get(i) * 0.97 && !buy && durchlauf) {
+                tempSell = ((anteile * close.get(i)) + rest);
+                buy = true;
+                dreiProzentBuySell.add("sell");
+                dreiProzent.add(tempSell);
+                dreiProzentDates.add(dates.get(i));
+                depotzw = tempSell;
+                anteile = 0;
+            }
+            durchlauf = true;
         }
-        outputCalc();
-        System.out.println(tempAktie);
-        System.out.println("depot: " + depotAufgeteilt);
-        System.out.println("200er Strategie: " + Math.round((zweihunderter * 100) / 100) + "     prozentuale Veränderung " + Math.round(((zweihunderter / depotAufgeteilt) * 10000)/100)+"%");
-        System.out.println("3 Prozent: " + Math.round((dreiProzent * 100) / 100) + "     prozentuale Veränderung " + Math.round(((dreiProzent / depotAufgeteilt) * 10000)/100)+"%");
-        System.out.println("Buy and Hold: " + Math.round((xBuyAndHold * 100) / 100) + "   prozentuale Veränderung " + Math.round(((xBuyAndHold / depotAufgeteilt) * 10000)/100)+"%");
+        if (dreiProzentBuySell.get(dreiProzentBuySell.size() - 1) == "buy") {
+            tempSell = ((anteile * close.get(close.size() - 1)) + rest);
+            buy = true;
+            dreiProzentBuySell.add("sell");
+            dreiProzent.add(tempSell);
+            depotzw = tempSell;
+            anteile = 0;
+        }
+        try {
+            for (int i = 0; i < dreiProzentDates.size(); i++) {
+                String writeData = "insert ignore into " + tempAktie + "_3Pro (datum, flag, Money) values('" + dreiProzentDates.get(i) + "', '" + dreiProzentBuySell.get(i) + "', '" + dreiProzent.get(i) + "');";
+                myStmt.executeUpdate(writeData);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void buyAndHold(String tempAktie) {
+        String kaufdatum = "", verkaufsdatum = "";
+        double temp, rest = 0, anteile = 0, tempSell = 0, depotzw = depotAufgeteilt;
+
+        try {
+            ResultSet rsNormal = myStmt.executeQuery("SELECT * from " + tempAktie + "_calc where datum >= '" + kaufDatum + "'order by datum asc limit 1");
+            while (rsNormal.next()) {
+                kaufdatum = rsNormal.getString("datum");
+            }
+            temp = (depotzw / close.get(close.size() - 1));
+
+            rest = temp;
+            anteile = (int) temp;
+            rest = (rest - anteile) * close.get(close.size() - 1);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        try {
+            ResultSet rsNormal = myStmt.executeQuery("SELECT * from " + tempAktie + "_calc where datum >= '" + kaufDatum + "'order by datum desc limit 1");
+            while (rsNormal.next()) {
+                verkaufsdatum = rsNormal.getString("datum");
+            }
+            tempSell = ((anteile * close.get(0)) + rest);
+            bAHEndwert = bAHEndwert + tempSell;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            for (int i = 0; i < 2; i++) {
+                String writeData = "insert ignore into " + tempAktie + "_BaH (kaufdatum, verkaufsdatum, depot, Money, anteile) values('" + kaufdatum + "', '" + verkaufsdatum + "', '" + depot + "', '" + depotzw + "', '" + anteile + "');";
+                myStmt.executeUpdate(writeData);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+
+    public static void output() {
+        double tempZweihunderter = 0, tempDreiProzent = 0;
+        for (int i = 0; i < zweihunderter.size(); i++) {
+            tempZweihunderter = tempZweihunderter + zweihunderter.get(i);
+            tempDreiProzent = tempDreiProzent + dreiProzent.get(i);
+
+        }
+        System.out.printf("200er gesamt: " + String.format("%.2f", (tempZweihunderter - depotAufgeteilt)) + "     prozentuale Veränderung: " + Math.round(((tempZweihunderter - depotAufgeteilt) / depotAufgeteilt) * 100) + " Prozent");
         System.out.println(" ");
-    }
-
-    public static void clear() {
-        dates.clear();
-        close.clear();
-        avg.clear();
-        buySellWert.clear();
-        buySellList.clear();
-        dreiProzentWert.clear();
-        dreiProzentList.clear();
-        buyAndHold.clear();
-        zweihunderter = 0;
-        dreiProzent = 0;
-        xBuyAndHold = 0;
-    }
-    public static void inputData() {
-        String temp = "";
-        String x = "1999-01-01";
-        System.out.println("Kaufdatum [JJJJ-MM-DD]: ");
-        temp = reader.next();
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("[yyyy,M,d][yyyy.M.d][yyyy-M-d][d/M/yyyy]");
-        LocalDate firstDate = LocalDate.parse(temp, dtf);
-        kaufDatum = LocalDate.parse(firstDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
-        System.out.println(kaufDatum);
-        if (kaufDatum.isBefore(LocalDate.parse(x))) {
-            System.out.println("Falsches Datum (zu klein)");
-            inputData();
-        }
-        if (kaufDatum.isAfter(LocalDate.now())) {
-            System.out.println("Falsches Datum (nach Heute)");
-            inputData();
-        }
-        System.out.println("Depot: ");
-        depot = reader.nextDouble();
-        if (depot < 0.01) {
-            System.out.println("Depot zu klein");
-            inputData();
-        }
-    }
-
-
-    public static void main(String[] args) throws SQLException, IOException {
-        inputData();
-        a.inputUserTXT();
-        depotAufgeteilt = depot/a.auswahlAktie.size();
-        System.out.println(depotAufgeteilt);
-        for (int i = 0; i < a.auswahlAktie.size(); i++) {
-            db();
-            getDataFormCalc(a.auswahlAktie.get(i));
-            createTableSIM(a.auswahlAktie.get(i));
-            buySell();
-            dreiProzent();
-            buyAndHold();
-            writeSIMDataInDB(a.auswahlAktie.get(i));
-            output(a.auswahlAktie.get(i));
-            launch(args);
-
-            clear();
-        }
-    }
-    @Override public void start(Stage stage) {
-        stage.setTitle("Line Chart Sample");
-        final CategoryAxis xAxis = new CategoryAxis();
-        final NumberAxis yAxis = new NumberAxis();
-        xAxis.setLabel("Month");
-        final LineChart<String, Number> lineChart =
-                new LineChart<String, Number>(xAxis, yAxis);
-
-        lineChart.setTitle("Backtesting");
-
-        XYChart.Series zweihunderter = new XYChart.Series();
-        zweihunderter.setName("200er");
-        for (int i = 0; i < dates.size() - 1; i++) {
-            zweihunderter.getData().add(new XYChart.Data(dates.get(i), buySellWert.get(i)));
-        }
-        XYChart.Series dreiProzent = new XYChart.Series();
-        dreiProzent.setName("3%");
-        for (int i = 0; i < dates.size() - 1; i++) {
-            dreiProzent.getData().add(new XYChart.Data(dates.get(i), dreiProzentWert.get(i)));
-        }
-        XYChart.Series buyAndHoldJavaFX = new XYChart.Series();
-        buyAndHoldJavaFX.setName("Buy and Hold");
-        for (int i = 0; i < dates.size() - 1; i++) {
-            buyAndHoldJavaFX.getData().add(new XYChart.Data(dates.get(i), buyAndHold.get(i)));
-        }
-        Scene scene  = new Scene(lineChart,800,600);
-        lineChart.getData().addAll(zweihunderter, dreiProzent, buyAndHoldJavaFX);
-
-        stage.setScene(scene);
-     //   stage.show();
+        System.out.printf("3 Prozent gesamt: " + String.format("%.2f", (tempDreiProzent - depotAufgeteilt)) + "     prozentuale Veränderung: " + Math.round(((tempDreiProzent - depotAufgeteilt) / depotAufgeteilt) * 100) + " Prozent");
+        System.out.println(" ");
+        System.out.printf("Buy and Hold gesamt: " + String.format("%.2f", (bAHEndwert - depotAufgeteilt)) + "     prozentuale Veränderung: " + Math.round(((bAHEndwert - depotAufgeteilt) / depotAufgeteilt) * 100) + " Prozent");
+        System.out.println("");
 
     }
 }
+
