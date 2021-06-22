@@ -44,4 +44,22 @@ Für IntelliJ: </br>
 	Die Dateien 1,2,3 in einen Ordner speichern, wo sie wieder aufindbar sind. Danach das Projekt starten, </br>
 	unter File -> Project Structure -> Libraries gehen. Auf das Plus (neben Minus und Copy) drücken, </br>
 	danach Java auswählen und dann die 3 Libraries einzeln einbinden. Zum Schluss auf Apply drücken und OK.</br>
+	
+	
+Backtesting:</br>
+	Beim Backtesting simuliert man, wie viel Gewinn man gemacht hätte, wenn man zu einem gewissen Zeitpunkt eine gewisse Summe Geld investiert hätte.</br>
+	Diese Daten werden in einer Datenbank gespeichert und in einem Kreisdiagramm dargestllt. Bei diesem Programm wurden 3 Methoden angewandt:</br>
+</br>
+	200er-Schnitt:</br>
+		In dem Progrmm (oben) wurde der 200er-Schnitt oder der gleitende Mittelwert berechnet. Bei dieser Methode richtet man sich nach diesem Wet, 
+		d.h. ist dieser die 200er Linie unter dem close-Wert, so werden Akiten für einen gewissen Geldbetrag gekauft. Ist der 200er wieder über dem close-Wert</br>
+		werden die Anteile wieder verkauft, bis zum letzten Datum an dem die Aktie gearbeitet hat.</br>
+		</br>
+	200er-Schnitt mit 3%: </br>
+		Diese Methode funktioniert grundsätzlich gleich wie die obrige, nur dass erst dann gekuaft wird,</br>
+		wenn der gleitende Mittelwert 3% unter dem close-Wert liegt. Verkauft werden die Anteile, wenn der gleitende Mittelwert 3% über dem close-Wert liegt.</br>
+	</br>
+	Buy and Hold:
+		Bei dieser Methode werden an einem gewissen Datum für einen gewissen Geldbetrag Anteile gekauft. Diese werden am letzten Aktientag verkauft, </br>
+		also an dem letzten aufgezeichneten Tag.
 
