@@ -48,7 +48,7 @@ Für IntelliJ: </br>
 	
 Backtesting:</br>
 	Beim Backtesting simuliert man, wie viel Gewinn man gemacht hätte, wenn man zu einem gewissen Zeitpunkt eine gewisse Summe Geld investiert hätte.</br>
-	Diese Daten werden in einer Datenbank gespeichert und in einem Kreisdiagramm dargestllt. Bei diesem Programm wurden 3 Methoden angewandt:</br>
+	Diese Daten werden in einer Datenbank gespeichert und in einem Kreisdiagramm(in History, nicht im Code) oder einem Balkendiagramm dargestllt. Bei diesem Programm wurden 3 Methoden angewandt:</br>
 </br>
 	200er-Schnitt:</br>
 		In dem Progrmm (oben) wurde der 200er-Schnitt oder der gleitende Mittelwert berechnet. Bei dieser Methode richtet man sich nach diesem Wet, 
