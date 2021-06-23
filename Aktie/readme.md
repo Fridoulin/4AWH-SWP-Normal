@@ -47,12 +47,12 @@ Für IntelliJ: </br>
 	
 	
 Backtesting:</br>
-	Beim Backtesting simuliert man, wie viel Gewinn man gemacht hätte, wenn man zu einem gewissen Zeitpunkt eine gewisse Summe Geld investiert hätte.</br>
+	Beim Backtesting simuliert man, wie viel Gewinn man gemacht hätte, wenn man zu einem gewissen Zeitpunkt eine gewisse Summe Geld investiert hätte.
 	Diese Daten werden in einer Datenbank gespeichert und in einem Kreisdiagramm(in History, nicht im Code) oder einem Balkendiagramm dargestllt. Bei diesem Programm wurden 3 Methoden angewandt:</br>
 </br>
 	200er-Schnitt:</br>
 		In dem Progrmm (oben) wurde der 200er-Schnitt oder der gleitende Mittelwert berechnet. Bei dieser Methode richtet man sich nach diesem Wet, 
-		d.h. ist dieser die 200er Linie unter dem close-Wert, so werden Akiten für einen gewissen Geldbetrag gekauft. Ist der 200er wieder über dem close-Wert</br>
+		d.h. ist dieser die 200er Linie unter dem close-Wert, so werden Akiten für einen gewissen Geldbetrag gekauft. Ist der 200er wieder über dem close-Wert
 		werden die Anteile wieder verkauft, bis zum letzten Datum an dem die Aktie gearbeitet hat.</br>
 		</br>
 	200er-Schnitt mit 3%: </br>
