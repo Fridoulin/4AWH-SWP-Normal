@@ -61,5 +61,5 @@ Backtesting:</br>
 	</br>
 	Buy and Hold:
 		Bei dieser Methode werden an einem gewissen Datum für einen gewissen Geldbetrag Anteile gekauft. Diese werden am letzten Aktientag verkauft, </br>
-		also an dem letzten aufgezeichneten Tag.</br>
+		also an dem letzten aufgezeichneten Tag.
 
