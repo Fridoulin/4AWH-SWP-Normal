@@ -1,15 +1,26 @@
 import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.Scene;
+import javafx.scene.chart.*;
+import javafx.scene.image.WritableImage;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 import org.w3c.dom.ls.LSOutput;
 
+import javax.imageio.ImageIO;
+import java.io.File;
 import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Scanner;
 import java.util.function.DoubleToIntFunction;
 
-public class SIM {
+public class SIM extends Application{
     public static AktieAPISQL a = new AktieAPISQL();
     static Connection connection = a.connection;
     static Statement myStmt = a.myStmt;
@@ -39,7 +50,7 @@ public class SIM {
             buyAndHold(a.auswahlAktie.get(i));
         }
         output();
-
+        launch(args);
     }
 
     public static void inputData() {
@@ -231,7 +242,7 @@ public class SIM {
 
         try {
             for (int i = 0; i < 2; i++) {
-                String writeData = "insert ignore into " + tempAktie + "_BaH (kaufdatum, verkaufsdatum, depot, Money, anteile) values('" + kaufdatum + "', '" + verkaufsdatum + "', '" + depot + "', '" + depotzw + "', '" + anteile + "');";
+                String writeData = "insert ignore into " + tempAktie + "_BaH (kaufdatum, verkaufsdatum, depot, Money, anteile) values('" + kaufdatum + "', '" + verkaufsdatum + "', '" + depotAufgeteilt + "', '" + bAHEndwert + "', '" + anteile + "');";
                 myStmt.executeUpdate(writeData);
             }
         } catch (SQLException e) {
@@ -246,7 +257,6 @@ public class SIM {
         for (int i = 0; i < zweihunderter.size(); i++) {
             tempZweihunderter = tempZweihunderter + zweihunderter.get(i);
             tempDreiProzent = tempDreiProzent + dreiProzent.get(i);
-
         }
         System.out.printf("200er gesamt: " + String.format("%.2f", (tempZweihunderter - depotAufgeteilt)) + "     prozentuale Veränderung: " + Math.round(((tempZweihunderter - depotAufgeteilt) / depotAufgeteilt) * 100) + " Prozent");
         System.out.println(" ");
@@ -255,6 +265,32 @@ public class SIM {
         System.out.printf("Buy and Hold gesamt: " + String.format("%.2f", (bAHEndwert - depotAufgeteilt)) + "     prozentuale Veränderung: " + Math.round(((bAHEndwert - depotAufgeteilt) / depotAufgeteilt) * 100) + " Prozent");
         System.out.println("");
 
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        double tempZweihunderter = 0, tempDreiProzent = 0;
+        for (int i = 0; i < zweihunderter.size(); i++) {
+            tempZweihunderter = tempZweihunderter + zweihunderter.get(i);
+            tempDreiProzent = tempDreiProzent + dreiProzent.get(i);
+        }
+        CategoryAxis xAxis = new CategoryAxis();
+
+        NumberAxis yAxis = new NumberAxis();
+        yAxis.setLabel("Money");
+        BarChart<String, Number> barChart = new BarChart<String, Number>(xAxis, yAxis);
+        XYChart.Series<String, Number> feiertageJavaFX = new XYChart.Series<String, Number>();
+        feiertageJavaFX.getData().add(new XYChart.Data<String, Number>("200er", tempZweihunderter));
+        feiertageJavaFX.getData().add(new XYChart.Data<String, Number>("3%", tempDreiProzent));
+        feiertageJavaFX.getData().add(new XYChart.Data<String, Number>("Buy and Hold", bAHEndwert));
+        barChart.getData().add(feiertageJavaFX);
+        barChart.setTitle("Backtesting");
+        VBox vbox = new VBox(barChart);
+        Scene scene = new Scene(vbox, 400, 200);
+        primaryStage.setScene(scene);
+        primaryStage.setHeight(300);
+        primaryStage.setWidth(400);
+        primaryStage.show();
     }
 }
 
