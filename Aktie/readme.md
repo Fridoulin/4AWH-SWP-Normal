@@ -60,6 +60,6 @@ Backtesting:</br>
 		wenn der gleitende Mittelwert 3% unter dem close-Wert liegt. Verkauft werden die Anteile, wenn der gleitende Mittelwert 3% über dem close-Wert liegt.</br>
 	</br>
 	Buy and Hold:
-		Bei dieser Methode werden an einem gewissen Datum für einen gewissen Geldbetrag Anteile gekauft. Diese werden am letzten Aktientag verkauft, </br>
+		Bei dieser Methode werden an einem gewissen Datum für einen gewissen Geldbetrag Anteile gekauft. Diese werden am letzten Aktientag verkauft, 
 		also an dem letzten aufgezeichneten Tag.
 
