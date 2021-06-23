@@ -59,7 +59,7 @@ public class SIM {
             System.out.println("Falsches Datum (nach Heute)");
             inputData();
         }
-        System.out.println("Depot: ");
+        System.out.println("Depot [€/$]: ");
         depot = reader.nextDouble();
         if (depot < 0.01) {
             System.out.println("Depot zu klein");
